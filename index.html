@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#152624">
+  <meta name="description" content="천하 개발 관측소. 캠페인, 개별 병사 전투, 그래픽과 모드 제작의 현재 상태·계획·검증 기록을 확인합니다.">
+  <title>천하 — 개발 관측소</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23152624'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-size='44' fill='%23e8cf96'%3E天%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="monitor-data.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">본문으로 이동</a>
+  <header class="site-header">
+    <a class="brand" href="#board" aria-label="천하 개발 관측소 처음으로"><span class="seal" aria-hidden="true">天</span><span><strong>천하 <span>TIANXIA</span></strong><small>개발 관측소</small></span></a>
+    <nav class="view-nav" aria-label="보기 선택">
+      <button type="button" data-view="board" class="active" aria-pressed="true">개발 보드</button>
+      <button type="button" data-view="parity" aria-pressed="false">기능과 격차</button>
+      <button type="button" data-view="evidence" aria-pressed="false">검증 기록</button>
+    </nav>
+    <div class="snapshot-mark"><span class="status-dot"></span>검토된 스냅샷</div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="live-mark"></span>DEVELOPMENT JOURNAL <span class="hero-version" id="hero-version">v0.3.1</span></div>
+        <h1 id="hero-title">더 살아 있는 전장.<br><span>더 깊어지는 천하.</span></h1>
+        <p class="hero-description">캠페인부터 전장까지, 삼국지 토탈워와 동등한 수준을 최대한 추구합니다.</p>
+        <div class="hero-priority"><span>현재 우선순위</span><strong>기능·그래픽 확장</strong><i aria-hidden="true">/</i><span>최적화 병행</span></div>
+        <p class="hero-footnote">독립 개발 중인 전략 게임 · 구현한 범위와 남은 격차를 함께 기록합니다.</p>
+      </div>
+      <figure class="hero-image">
+        <img src="assets/battle-m03-1.png" alt="천하 M03.1 개발판에서 방패와 창을 든 보병들의 근접 전투 화면" width="1920" height="1080" fetchpriority="high">
+        <figcaption><span>M03.1 · 실제 개발판 화면</span><small>개별 물리 통합 전</small></figcaption>
+      </figure>
+    </section>
+
+    <section class="summary-strip" aria-label="개발 현황 요약">
+      <div class="summary-primary"><span class="eyebrow">NOW BUILDING</span><strong>M05 <span>개별 교전 + 3D 캠페인</span></strong></div>
+      <div class="summary-value"><strong id="count-active">—</strong><span>진행 중 카드</span></div>
+      <div class="summary-value"><strong id="count-complete">—</strong><span>검증 완료 카드</span></div>
+      <div class="summary-value"><strong>25,664<small>명</small></strong><span>기준 전투 초기 병력</span></div>
+      <div class="summary-updated"><span>마지막 스냅샷</span><time id="updated-time">—</time><small>실시간 자동 추적 아님</small></div>
+    </section>
+
+    <section class="workspace" id="workspace" aria-labelledby="workspace-title">
+      <div class="section-heading"><div><div class="eyebrow" id="section-eyebrow">WORK IN VIEW</div><h2 id="workspace-title">무엇을 만들고 있나요</h2></div><p id="section-description">진행 중인 기능부터 완료 근거와 다음 단계까지.</p></div>
+      <div class="toolbar" id="toolbar">
+        <div class="domain-filters" id="domain-filters" role="group" aria-label="분야 필터"></div>
+        <label class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><span class="sr-only">카드와 기능 검색</span><input id="search" type="search" placeholder="기능, 마일스톤 검색" autocomplete="off"><kbd aria-hidden="true">/</kbd></label>
+      </div>
+      <div class="results-bar" id="results-bar"><span id="result-count" role="status" aria-live="polite"></span><span>카드를 펼치면 근거와 다음 단계를 볼 수 있습니다</span><button id="reset-filters" type="button" hidden>필터 초기화</button></div>
+
+      <section id="board-view" class="view-panel" aria-label="상태별 개발 카드"><div class="kanban-board" id="kanban-board"></div></section>
+      <section id="parity-view" class="view-panel" aria-label="기능 구현 범위 비교" hidden>
+        <div class="context-note"><span class="note-symbol" aria-hidden="true">↗</span><p><strong>항목별 격차를 좁혀갑니다.</strong> 표의 ‘기반 구현’은 해당 분야 전체의 완성을 뜻하지 않습니다. 현재 동작하는 범위와 아직 필요한 기능을 함께 읽어주세요.</p></div>
+        <div class="parity-wrap"><table class="parity-table"><caption class="sr-only">분야별 현재 구현, 남은 격차와 다음 작업</caption><thead><tr><th scope="col">분야</th><th scope="col">현재 구현</th><th scope="col">남은 격차</th><th scope="col">다음 작업</th></tr></thead><tbody id="parity-body"></tbody></table></div>
+        <p id="parity-empty" class="empty-state" hidden>조건에 맞는 분야가 없습니다. 다른 검색어나 분야를 선택해주세요.</p>
+      </section>
+      <section id="evidence-view" class="view-panel" aria-label="마일스톤과 성능 검증 기록" hidden>
+        <div class="milestone-timeline" id="milestone-timeline"></div>
+        <div class="evidence-grid">
+          <article class="evidence-card render-evidence"><div class="card-eyebrow"><span>M03.1 · 확인된 렌더 성능</span><span class="badge complete">측정 완료</span></div><h3>근접 화면을 더 가볍게</h3><div class="fps-comparison"><div><span>이전</span><strong id="fps-before">—</strong><small>평균 FPS</small></div><span class="comparison-arrow" aria-hidden="true">→</span><div class="fps-after"><span>개선 후</span><strong id="fps-after">—</strong><small>평균 FPS</small></div></div><div class="metric-row"><div><span>원거리 평균</span><strong id="fps-wide">—</strong></div><div><span>근접 p99 프레임</span><strong id="render-p99">—</strong></div><div><span>GPU 검사</span><strong id="gpu-checks">—</strong></div></div><p class="measurement-conditions" id="render-conditions"></p><p class="scope-note" id="render-scope"></p></article>
+          <article class="evidence-card physics-evidence"><div class="card-eyebrow"><span>M05 · 첫 개별 병사 모듈</span><span class="badge in_progress">통합 진행</span></div><h3>개인 접촉, 숫자로 확인하기</h3><p class="physics-intro">기능 검사 통과와 대규모 실시간 성능을 따로 확인합니다.</p><div class="metric-row physics-top"><div><span>통과한 기능 검사</span><strong id="physics-checks">—</strong></div><div><span>접촉 타격 의도</span><strong id="physics-hits">—</strong></div><div><span>개별 사망</span><strong id="physics-deaths">—</strong></div></div><div class="physics-cost"><span>대규모 접촉 CPU / 스텝</span><div><strong id="physics-median">미측정</strong><span id="physics-p99">p99 미측정</span></div><p id="physics-budget"></p></div><p class="measurement-conditions" id="physics-conditions"></p><p class="scope-note">초기 분리 모델의 검사입니다. 완전한 비관통·3D 강체·무기 골격 충돌을 검증한 결과가 아닙니다. 통합 플레이·GPU 측정은 별도입니다.</p></article>
+        </div>
+        <div class="evidence-bottom"><article><h3>상태는 이렇게 읽습니다</h3><ul id="evidence-policy"></ul></article><article><h3>공개 데이터의 출처</h3><div id="evidence-sources"></div></article></div>
+      </section>
+    </section>
+    <aside class="scope-banner"><span class="scope-icon" aria-hidden="true">記</span><div><strong>완료율 대신, 확인할 수 있는 변화.</strong><p>보드 카드 비율은 원작 대비 완성도가 아닙니다. 매 단계의 기능·화면·성능 근거와 엔진·도구·모드 선택을 함께 검토합니다.</p></div><button type="button" data-view="evidence">검증 기록 보기 <span aria-hidden="true">↗</span></button></aside>
+  </main>
+  <footer class="site-footer"><span><strong>천하</strong> TIANXIA · DEVELOPMENT OBSERVATORY</span><p id="snapshot-note">검토된 공개 개발 스냅샷</p><a href="monitor-data.json" download>공개 데이터 JSON <span aria-hidden="true">↓</span></a></footer>
+  <noscript><div class="noscript-message">이 대시보드는 카드 표시와 필터에 JavaScript를 사용합니다. <a href="monitor-data.json">공개 데이터 JSON</a>에서 내용을 확인할 수 있습니다.</div></noscript>
+</body>
+</html>
