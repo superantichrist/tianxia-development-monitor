@@ -1,11 +1,11 @@
 window.MONITOR_DATA = {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-10T08:18:06+00:00",
+  "updatedAt": "2026-09-10T08:53:07+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
     "edition": "개발 관측소",
-    "latestVerified": "0.3.1",
+    "latestVerified": "0.4.0-dev",
     "currentMilestone": "M05",
     "goal": "캠페인부터 전장까지, 삼국지 토탈워와 동등한 수준을 최대한 추구합니다.",
     "policy": "기능·그래픽 확장을 우선하고, 최적화를 병행합니다.",
@@ -66,9 +66,9 @@ window.MONITOR_DATA = {
       "domain": "battle",
       "status": "in_progress",
       "milestone": "M05",
-      "summary": "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결합니다.",
-      "evidence": "모듈 270개·전투 통합 15개 검사, 1,344명 실제 화면을 확인했습니다. 렌더 연결 584개 headless 검사는 통과했고 새 GPU 버퍼·화면 검증은 대기 중입니다.",
-      "next": "최대 병력의 실제 렌더 버퍼·사망 위치·접촉·통합 영상 확인",
+      "summary": "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결했습니다.",
+      "evidence": "모듈 270개·전투 통합 15개 검사. 렌더 연결 headless 584개와 실제 GPU 776개 검사를 통과했습니다. 개별 사망 후 ID 재배치·보간·LOD·그림자·행동 데이터를 GPU에서 읽어 확인했습니다.",
+      "next": "전체 캠페인·전투·일기토 마일스톤 영상 검증과 대규모 플레이 품질 개선",
       "priority": "focus"
     },
     {
@@ -88,9 +88,9 @@ window.MONITOR_DATA = {
       "domain": "campaign",
       "status": "in_progress",
       "milestone": "M05",
-      "summary": "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장합니다.",
-      "evidence": "캠페인 지형·군대 210개 검사와 GPU 화면 확인. M05 통합 빌드·완료 영상은 준비 중입니다.",
-      "next": "통합 캠페인 조작과 지형 그래픽 품질 확인",
+      "summary": "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.",
+      "evidence": "캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 19개 검사도 통과했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "next": "캠페인 조작·지형·군대 이동의 그래픽과 플레이 품질 확장",
       "priority": "focus"
     },
     {
@@ -111,8 +111,8 @@ window.MONITOR_DATA = {
       "status": "in_progress",
       "milestone": "M05",
       "summary": "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.",
-      "evidence": "규칙·16개 장수 대진·전용 모드·전장 UI 합계 210개 headless 검사 통과. 휴대용 실행도 확인했으며 최신 모델·포즈의 최종 통합 빌드와 영상은 아직입니다.",
-      "next": "네 장수의 모델·공격 동작을 실제 화면에서 검증하고 최신 별도 실행 빌드 제공",
+      "evidence": "일기토 합계 210개 headless 검사, 프로젝트 밖의 휴대용 실행 88개 검사 통과. 최신 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "next": "장수별 무기 접촉·전용 동작과 연출 확장",
       "priority": "focus"
     },
     {
@@ -121,9 +121,9 @@ window.MONITOR_DATA = {
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05",
-      "summary": "얼굴·수염·체형·갑옷·전용 무기를 구분한 근접용 하마 모델을 Blender에서 제작합니다.",
-      "evidence": "네 명의 편집 원본·PBR 모델·몸통과 무기 피벗을 제작했고, 선택 화면에서 대체 모델 없이 로드됨을 확인했습니다. 추가 실사화와 전용 공격 포즈를 개선 중입니다.",
-      "next": "최신 네 모델의 얼굴·손·무기 궤적과 공격·방어·피격을 GPU 화면으로 검토",
+      "summary": "얼굴·수염·체형·갑옷·전용 무기를 구분한 네 명의 근접용 하마 모델과 강체 관절 기반 양손 IK를 제작했습니다.",
+      "evidence": "실사화 r2 모델을 실제 GPU에서 확인했습니다. 포즈 24개 검사 / 1,836개 표본에서 팔 길이·관절 원점·양손과 무기 연결을 확인했습니다. 전신 스키닝과 실제 무기 충돌 판정은 별도 과제입니다.",
+      "next": "전용 무기 동작·접촉 연출과 얼굴·의복 품질 확장",
       "priority": "focus"
     },
     {
@@ -187,9 +187,9 @@ window.MONITOR_DATA = {
       "domain": "modding",
       "status": "in_progress",
       "milestone": "M04",
-      "summary": "원작의 기존 모드 구성으로 내장 전투와 새 유비 캠페인을 실제 실행했습니다.",
-      "evidence": "9월 9일 내장 전투 CSV 11,690프레임 / 93.721초, 전체 행 평균 124.732 FPS. 9월 10일 새 캠페인 지도·3D 군대·장수 카드 확인. 개발 작업이 겹친 원작 실행 기록이며 Godot와 비교한 수치가 아닙니다.",
-      "next": "초기 캠페인 전투·저장 재실행·같은 조건의 품질 후보·개별 패치 효과 확인",
+      "summary": "기존 모드 구성의 내장 전투와 새 유비 캠페인에서 군대 이동·초기 전투·결정적 승리·캠페인 복귀를 실제 확인했습니다.",
+      "evidence": "9월 9일 내장 전투 CSV 11,690프레임 / 93.721초, 전체 행 평균 124.732 FPS. 9월 10일 1,263 대 721명 초기 전투와 장비 일기토 시작 확인. 일기토 개별 결과는 미확인이며 이 원작 FPS를 Godot와 비교하지 않습니다.",
+      "next": "실제 저장·재실행·리플레이 재생·근접 일기토·같은 조건의 품질 후보·패치 효과 확인",
       "priority": "normal"
     },
     {
@@ -338,16 +338,16 @@ window.MONITOR_DATA = {
     {
       "area": "장군 일기토",
       "domain": "battle",
-      "current": "독립 실행 모드·4장수 모델·2인 교전·태세·받아치기·결과",
-      "gap": "얼굴·손·전용 무기 동작의 실사감, 전신 스키닝·양손 IK와 연출",
-      "next": "추가 모델 개선과 최신 포즈·GPU 화면·통합 영상",
+      "current": "독립 모드·4장수 모델·강체 관절 양손 IK·2인 교전·받아치기·실제 HP와 결과",
+      "gap": "전신 스키닝·동작 세트·정교한 무기 충돌과 접촉 연출",
+      "next": "통합 보고 영상·전용 무기 동작과 얼굴·의복 품질 확장",
       "level": "개발 중"
     },
     {
       "area": "원작 모드·튜닝",
       "domain": "modding",
-      "current": "공식 도구·정적 진단·내장 전투 CSV·신규 캠페인 지도와 군대 선택",
-      "gap": "초기 전투·저장 재실행·모드 조합 호환성과 개별 패치 효과",
+      "current": "공식 도구·내장 전투 CSV·신규 캠페인 초기 전투 승리와 지도 복귀·장비 일기토 시작",
+      "gap": "실제 저장·재실행·리플레이 재생·근접 동작과 모드 호환성·패치 효과",
       "next": "같은 조건의 반복·품질 후보 비교",
       "level": "실행 검증 진행"
     }
@@ -382,17 +382,17 @@ window.MONITOR_DATA = {
       "id": "M04",
       "title": "원작 모드·튜닝 비교",
       "status": "in_progress",
-      "description": "원작 내장 전투 CSV와 신규 유비 캠페인 지도·군대 선택 확인 · 품질·호환성 비교 진행",
+      "description": "내장 전투 CSV, 신규 유비 캠페인 초기 전투 승리·장비 일기토 시작·지도 복귀 확인 · 저장·품질·호환성 비교 진행",
       "checks": {},
       "videoVerified": false
     },
     {
       "id": "M05",
       "title": "개별 전투·3D 캠페인·4장수 일기토",
-      "status": "in_progress",
+      "status": "complete",
       "description": "개인 이동·접촉, 연속 지형·3D 군대, 여포·관우·장비·마초와 별도 일기토 모드",
       "checks": {},
-      "videoVerified": false
+      "videoVerified": true
     },
     {
       "id": "후속",
@@ -444,18 +444,31 @@ window.MONITOR_DATA = {
     ],
     "controlledComparison": false,
     "engineTxtSummaryRecovered": false,
-    "campaignObservation": "9월 10일 유비 190년 새 테스트 캠페인 지도, 3D 군대, 군대 선택과 유비·관우·장비 부대 카드 확인",
-    "scope": "원작 내장 전투 CSV 전체 행의 재계산입니다. 개발 작업 일부가 겹쳤으며 장면·해상도·병력이 다른 Godot 성능과 비교하지 않습니다. 새 캠페인의 초기 전투·저장 재실행·전체 모드 호환성은 아직 검증 중입니다."
+    "campaignObservation": "9월 10일 신규 유비 캠페인 지도·3D 군대를 조작해 초기 황건적 전투를 플레이하고 결정적 승리·캠페인 복귀를 확인했습니다. 장비 일기토 시작과 두 장수 HP는 확인했으나 개별 일기토 결과·정확한 근접 무기 동작은 미확인입니다.",
+    "scope": "원작 내장 전투 CSV 전체 행의 재계산입니다. 개발 작업 일부가 겹쳤으며 장면·해상도·병력이 다른 Godot 성능과 비교하지 않습니다. 실제 캠페인 저장 생성·재실행, 리플레이 재생, 전체 모드 호환성과 품질 후보 비교는 아직 검증 중입니다."
   },
   "integrationChecks": {
     "individualRenderHeadless": 584,
-    "individualRenderGpuVerified": false,
+    "individualRenderGpu": 776,
+    "individualRenderGpuVerified": true,
     "duelHeadless": 210,
-    "currentMilestoneVideoVerified": false
+    "portableHeadless": 88,
+    "heroPoseChecks": 24,
+    "heroPoseSamples": 1836,
+    "uiGpu": 19,
+    "rigidJointTwoHandIkImplemented": true,
+    "currentMilestoneVideoVerified": true
+  },
+  "milestoneCompletion": {
+    "M05": {
+      "localVideoHashVerified": true,
+      "captureEvidenceVerified": true,
+      "privateUploadVerified": true
+    }
   },
   "evidencePolicy": [
     "완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.",
-    "M05는 모듈·headless 검사와 통합 GPU·규모 성능·플레이 영상 검증을 구분합니다. 최신 검증 완료 버전은 0.3.1입니다.",
+    "M05는 모듈·headless 검사와 통합 GPU·규모 성능·플레이 영상 검증을 구분합니다. 최신 검증 완료 버전은 0.4.0-dev입니다.",
     "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.",
     "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.",
     "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."
