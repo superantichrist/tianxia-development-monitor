@@ -1,0 +1,4 @@
+*.import
+.gdignore
+__pycache__/
+*.pyc

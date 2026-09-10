@@ -47,26 +47,46 @@ def build() -> dict:
     physics_metrics.update({"checks": number(physics.get("passed")),
                             "contact_hits": number(physics.get("contact_hits")),
                             "contact_deaths": number(physics.get("contact_deaths"))})
+    individual_render = read_json("artifacts/individual-render-headless-tests.json")
+    duel_sources = [read_json("artifacts/" + name) for name in (
+        "duel-director-tests.json", "duel-matchups-tests.json",
+        "duel-arena-tests.json", "battle-duel-ui-tests.json")]
+    for result in [physics, individual_render, *duel_sources]:
+        if not result or result.get("failures"):
+            raise ValueError("Required current check evidence is missing or contains failures")
+    physics_checks = int(physics["passed"])
+    render_checks = int(individual_render["passed"])
+    duel_checks = sum(int(result["passed"]) for result in duel_sources)
+    original = read_json("tools/modding/evidence/2026-09-10-runtime/summary.json")
+    original_metrics = {key: number(original.get("csv_metrics", {}).get(key)) for key in (
+        "frame_count", "total_frame_time_seconds", "average_fps", "mean_frame_time_ms", "p99_frame_time_ms")}
+    original_public = {
+        "milestone": "M04", "runDate": "2026-09-09", "collectionDate": "2026-09-10",
+        "metrics": original_metrics, "resolution": [1920, 1080],
+        "controlledComparison": False, "engineTxtSummaryRecovered": False,
+        "campaignObservation": "9월 10일 유비 190년 새 테스트 캠페인 지도, 3D 군대, 군대 선택과 유비·관우·장비 부대 카드 확인",
+        "scope": "원작 내장 전투 CSV 전체 행의 재계산입니다. 개발 작업 일부가 겹쳤으며 장면·해상도·병력이 다른 Godot 성능과 비교하지 않습니다. 새 캠페인의 초기 전투·저장 재실행·전체 모드 호환성은 아직 검증 중입니다.",
+    }
     bench = m031.get("benchmark_near", {})
     wide = m031.get("benchmark_wide", {})
     cards = [
-        card("individual", "병사마다 움직이는 전투", "battle", "in_progress", "M05", "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결합니다.", "모듈 266개·전투 통합 15개 검사, 1,344명 실제 화면을 확인했습니다. 최대 규모의 통합 성능·완료 영상은 별도입니다.", "최대 병력의 렌더 ID·사망 위치·접촉 비용·전투 품질 확인", "focus"),
+        card("individual", "병사마다 움직이는 전투", "battle", "in_progress", "M05", "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결합니다.", f"모듈 {physics_checks}개·전투 통합 15개 검사, 1,344명 실제 화면을 확인했습니다. 렌더 연결 {render_checks}개 headless 검사는 통과했고 새 GPU 버퍼·화면 검증은 대기 중입니다.", "최대 병력의 실제 렌더 버퍼·사망 위치·접촉·통합 영상 확인", "focus"),
         card("contact", "전선 접촉과 개별 타격", "battle", "in_progress", "M05", "접근 → 공격 준비 → 타격 → 회복. 공간 격자로 개인 접촉을 계산합니다.", "첫 분리 모델은 제한된 후보와 위치 보정을 사용합니다. 완전한 비관통 물리가 아닙니다.", "전선 후보 축소, 아군 교차, 표적 점유와 좁은 통로 검증", "focus"),
         card("terrain", "연속된 3D 캠페인 지형", "campaign", "in_progress", "M05", "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장합니다.", "캠페인 지형·군대 210개 검사와 GPU 화면 확인. M05 통합 빌드·완료 영상은 준비 중입니다.", "통합 캠페인 조작과 지형 그래픽 품질 확인", "focus"),
         card("campaign_armies", "지도 위 3D 군대와 장수", "campaign", "in_progress", "M05", "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결합니다.", "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. 완료 영상은 별도입니다.", "군대 선택·경로 이동·턴 전환의 통합 플레이 확인", "focus"),
-        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", "in_progress", "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", "일기토 규칙 40개, 전용 모드 흐름 14개 검사 통과. 실제 장수 모델과 근접 화면은 검토 중입니다.", "네 장수의 모델·공격 동작을 실제 화면에서 검증하고 별도 실행 빌드 제공", "focus"),
-        card("hero_models", "여포·관우·장비·마초 모델", "graphics", "in_progress", "M05", "얼굴·수염·체형·갑옷·전용 무기를 구분한 근접용 하마 모델을 Blender에서 제작합니다.", "독립된 편집 원본과 PBR 장수 모델 제작 중. 관절 피벗 방식이며 전신 스키닝·양손 IK는 후속입니다.", "네 모델의 실제 렌더 검토와 공격·방어·피격 동작 연결", "focus"),
+        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", "in_progress", "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"규칙·16개 장수 대진·전용 모드·전장 UI 합계 {duel_checks}개 headless 검사 통과. 휴대용 실행도 확인했으며 최신 모델·포즈의 최종 통합 빌드와 영상은 아직입니다.", "네 장수의 모델·공격 동작을 실제 화면에서 검증하고 최신 별도 실행 빌드 제공", "focus"),
+        card("hero_models", "여포·관우·장비·마초 모델", "graphics", "in_progress", "M05", "얼굴·수염·체형·갑옷·전용 무기를 구분한 근접용 하마 모델을 Blender에서 제작합니다.", "네 명의 편집 원본·PBR 모델·몸통과 무기 피벗을 제작했고, 선택 화면에서 대체 모델 없이 로드됨을 확인했습니다. 추가 실사화와 전용 공격 포즈를 개선 중입니다.", "최신 네 모델의 얼굴·손·무기 궤적과 공격·방어·피격을 GPU 화면으로 검토", "focus"),
         card("models", "인물·기병·말 모델 개선", "graphics", complete03, "M03", "인체 기반 얼굴, 피부 색상·노멀 재질과 병사·기병·말 8종을 개선했습니다.", "모델·재질 검사, 확대 GPU 화면, 실행 빌드와 마일스톤 영상 확인.", "골격 리깅, 보행·공격·피격 동작과 재질 품질 확장"),
         card("lod", "근접 공간 분할과 그림자 LOD", "performance", complete031, "M03.1", "가까운 공간 구역만 상세 모델로 표현해 근접 렌더 비용을 줄였습니다.", "GPU 354검사, 병사 수 보존, 동일 조건 근접·원거리 측정.", "새 개별 전투 통합 후 같은 조건에서 다시 측정"),
         card("campaign_base", "캠페인 기본 운영", "campaign", "complete", "기반", "8세력·30도시, 계절·세금·식량·민심·도시 건설·군대 운용을 연결했습니다.", "현재 기능 범위 문서에 기록된 실행 가능한 기본 시스템.", "세력별 구조·정치·경제·지도 콘텐츠를 확장"),
         card("controls", "전투 명령과 전술 기본", "battle", "complete", "기반", "배치·드래그 선택·집단 명령·진형·사기·패주·병종 상성을 구현했습니다.", "기존 부대 단위 전투 경로의 기능. 개별 병사 물리 완료를 뜻하지 않습니다.", "개인 접촉 모델과 전술 규칙의 일치 확인"),
         card("mod_tools", "모드 제작 도구와 정적 진단", "modding", "complete", "M04 · 도구", "공식 RPFM·스키마·의존성 캐시와 읽기 전용 진단 경로를 구성했습니다.", "설치 팩별 분리 진단과 복구 가능한 튜닝 후보를 준비했습니다.", "실제 원작 캠페인·전투에서 조합과 호환성 검증"),
-        card("mod_runtime", "원작 모드·튜닝 플레이 비교", "modding", "in_progress", "M04", "원작에서 현재 모드 구성과 그래픽·병력 규모 후보를 같은 장면으로 비교합니다.", "원작 런처와 게임 실행을 확인했습니다. 실제 전투·캠페인 비교를 진행합니다.", "기준 장면·프레임·세이브·모드 호환성 확인"),
+        card("mod_runtime", "원작 모드·튜닝 플레이 비교", "modding", "in_progress", "M04", "원작의 기존 모드 구성으로 내장 전투와 새 유비 캠페인을 실제 실행했습니다.", f"9월 9일 내장 전투 CSV {original_metrics['frame_count']:,}프레임 / {original_metrics['total_frame_time_seconds']:.3f}초, 전체 행 평균 {original_metrics['average_fps']:.3f} FPS. 9월 10일 새 캠페인 지도·3D 군대·장수 카드 확인. 개발 작업이 겹친 원작 실행 기록이며 Godot와 비교한 수치가 아닙니다.", "초기 캠페인 전투·저장 재실행·같은 조건의 품질 후보·개별 패치 효과 확인"),
         card("animation", "병사·말 골격 애니메이션", "graphics", "planned", "후속", "리깅과 보행·공격·피격·사망 상태를 개인 전투 위상에 연결합니다.", "현재 GPU 변형 동작과 구분되는 제작 과제.", "보병·말 각 1종의 골격 동작을 먼저 전투에 연결", "focus"),
         card("cavalry", "기병 충격과 창병 저지", "battle", "planned", "후속", "질량·속도·방향·대형을 고려한 접촉 충격과 저지 반응을 만듭니다.", "물리 설계 문서에 제안. 연속 충돌·넘어짐은 미구현 범위.", "기병 돌파와 창병 방어의 반복 가능한 충돌 장면"),
         card("siege", "공성 통로와 성벽 위 교전", "battle", "planned", "후속", "문·벽·사다리의 통로 용량과 높이 층을 전투 경로에 반영합니다.", "현재 성문·내구도·투석 규칙은 기본 구현. 성벽 위 이동은 확장 대상.", "좁은 문 통과, 열린 문·파괴된 벽 경로 변경 검사"),
         card("diplomacy", "장수·정치·외교 확장", "campaign", "planned", "M07", "인물 관계·장비·조정·복합 협상·수행 부대 구조를 확장합니다.", "기본 장수·외교·개혁은 존재하며 원작 전체 구조는 아직 없습니다.", "관계·직위·협상 기능의 플레이 시나리오 설계"),
-        card("native", "시뮬레이션 병목 개선", "performance", "in_progress", "M05 병행", "접촉 후보와 데이터 배치를 개선하고 C++ 모듈의 비용을 비교합니다.", "첫 측정의 병목을 개선 중이며 최신 모듈 CPU 수치를 검증 탭에 공개합니다. 통합 전투 FPS와 구분합니다.", "같은 알고리즘·병력·장면으로 비용과 기능 결과 비교"),
+        card("native", "시뮬레이션 병목 개선", "performance", "in_progress", "M05 병행", "C++ 접촉 계산을 연결하고 기능·그래픽 작업과 병행해 비용을 줄였습니다.", f"{physics_checks}개 검사 통과. 25,664명 상태의 모듈 접촉 중앙값 {physics_metrics['contact_median_ms']:.3f}ms / p99 {physics_metrics['contact_p99_ms']:.3f}ms. 통합 전투 FPS와 다른 CPU 스텝 측정입니다.", "같은 알고리즘·병력·장면의 통합 렌더 비용과 기능 결과 비교"),
         card("engine", "엔진·도구·모드 선택 재검토", "tooling", "in_progress", "매 단계", "Godot 개선, 다른 엔진, 전용 모듈, 원작 모드 경로를 단계마다 비교합니다.", "현재 경로는 Godot와 Blender. 다른 엔진의 우위를 아직 측정하지 않았습니다.", "기능·그래픽 효과, 제작 비용, 호환성과 성능을 함께 판단"),
         card("replay", "재현 가능한 전투·리플레이", "battle", "planned", "후속", "고정 틱·명령 기록·개별 상태 저장으로 같은 전투를 재현합니다.", "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.", "상태 해시와 저장·복원 후 결과 일치 확인"),
     ]
@@ -79,14 +99,15 @@ def build() -> dict:
         {"area":"공성·물리", "domain":"battle", "current":"성문·성벽 내구도·투석·화공·중앙 진입 경로", "gap":"성벽 위 전투·사다리·공성탑·복합 도시 길 찾기", "next":"장애물과 통로 용량 모델", "level":"기반 구현"},
         {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·조명·환경", "gap":"AAA 수준 스캔·의상 세트·모션 캡처·골격 동작", "next":"리깅·개인 동작·지형 그래픽 확장", "level":"개선 진행"},
         {"area":"사운드·제품 완성도", "domain":"graphics", "current":"합성 배경음·북소리, 한국어 UI, 캠페인 저장", "gap":"장수 음성·전체 효과음·멀티플레이·튜토리얼·접근성", "next":"핵심 기능 검증 후 범위별 확장", "level":"기반 구현"},
-        {"area":"원작 모드·튜닝", "domain":"modding", "current":"공식 도구·경로·스키마·분리 진단·후보 프로필", "gap":"실제 원작 플레이·세이브·모드 조합 호환성 확인", "next":"동일 장면 기준 비교", "level":"외부 검증 대기"},
+        {"area":"장군 일기토", "domain":"battle", "current":"독립 실행 모드·4장수 모델·2인 교전·태세·받아치기·결과", "gap":"얼굴·손·전용 무기 동작의 실사감, 전신 스키닝·양손 IK와 연출", "next":"추가 모델 개선과 최신 포즈·GPU 화면·통합 영상", "level":"개발 중"},
+        {"area":"원작 모드·튜닝", "domain":"modding", "current":"공식 도구·정적 진단·내장 전투 CSV·신규 캠페인 지도와 군대 선택", "gap":"초기 전투·저장 재실행·모드 조합 호환성과 개별 패치 효과", "next":"같은 조건의 반복·품질 후보 비교", "level":"실행 검증 진행"},
     ]
     public_milestones = []
     for key, title, state, description in [
         ("M03", "인체 기반 모델·재질", complete03, "인물·기병·말 개선, 실행 빌드와 영상 검증"),
         ("M03.1", "근접 렌더링 개선", complete031, "25,664명 표현 유지, 공간 분할·그림자 LOD"),
-        ("M04", "원작 모드·튜닝 비교", "external", "도구와 정적 진단 완료 · 원작 플레이 확인 대기"),
-        ("M05", "개별 교전 + 3D 캠페인", "in_progress", "개인 이동·접촉·타격, 지형과 지도 위 군대"),
+        ("M04", "원작 모드·튜닝 비교", "in_progress", "원작 내장 전투 CSV와 신규 유비 캠페인 지도·군대 선택 확인 · 품질·호환성 비교 진행"),
+        ("M05", "개별 전투·3D 캠페인·4장수 일기토", "in_progress", "개인 이동·접촉, 연속 지형·3D 군대, 여포·관우·장비·마초와 별도 일기토 모드"),
         ("후속", "애니메이션·공성·정치", "planned", "리깅·기병 충격·성벽 경로·장수·외교 확장"),
     ]:
         raw = milestones.get(key, {})
@@ -107,7 +128,9 @@ def build() -> dict:
         "cards":cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
-        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", "M05는 첫 모듈 검사와 통합·규모 성능·플레이 검증을 구분합니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.", "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."],
+        "originalGameRuntime":original_public,
+        "integrationChecks":{"individualRenderHeadless":render_checks,"individualRenderGpuVerified":False,"duelHeadless":duel_checks,"currentMilestoneVideoVerified":False},
+        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", "M05는 모듈·headless 검사와 통합 GPU·규모 성능·플레이 영상 검증을 구분합니다. 최신 검증 완료 버전은 0.3.1입니다.", "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.", "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."],
         "sources":[{"label":"마일스톤 상태", "source":"milestones.json의 선택된 필드", "scope":"M03·M03.1 상태와 수치만 자동 추출; 다음 기능은 명시적으로 분류"}, {"label":"기능 범위", "source":"FEATURES.md의 수동 검토 요약", "scope":"현재 기능과 생략·단순화된 범위를 분리"}, {"label":"물리 알고리즘", "source":"BATTLE_PHYSICS.md + 모듈 검사 결과", "scope":"설계, 첫 모듈 검사, 미구현·성능 한계 구분"}, {"label":"엔진·모드 경로", "source":"ENGINE_DECISIONS.md / ORIGINAL_GAME.md 요약", "scope":"도구 준비와 실제 원작 검증을 분리"}],
         "snapshotNote":"자동 실시간 상태가 아닌 검토된 공개 스냅샷입니다. 기능 카드 분류는 담당자가 갱신하고 생성기가 허용된 수치만 추출합니다.",
     }
