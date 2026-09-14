@@ -15,6 +15,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+PUBLIC_REFERENCE_URLS = frozenset({
+    "https://www.youtube.com/watch?v=EhPbt8CLEFo",
+    "https://www.youtube.com/watch?v=Qp-6yLLrPzI",
+})
 
 
 def read_json(relative: str) -> dict:
@@ -37,6 +41,51 @@ def within(path: Path, parent: Path) -> bool:
 def card(key, title, domain, status, milestone, summary, evidence, next_step, priority="normal"):
     return dict(id=key, title=title, domain=domain, status=status, milestone=milestone,
                 summary=summary, evidence=evidence, next=next_step, priority=priority)
+
+
+def current_development_evidence() -> dict:
+    """Select reviewed counts, without publishing raw reports or local paths."""
+    gallery = read_json("artifacts/hero-gallery-tests.json")
+    heroes = gallery.get("heroes", [])
+    if (gallery.get("failures") != [] or not number(gallery.get("passed")) or len(heroes) != 4
+            or {hero.get("hero") for hero in heroes} != {"lubu", "guanyu", "zhangfei", "machao"}
+            or not all(hero.get("authored") is True for hero in heroes)):
+        raise ValueError("Four-hero gallery evidence is missing or failed")
+    build = read_json("build/Tianxia/build-manifest.json")
+    pck_hash = build.get("packaged_sha256", {}).get("Tianxia.pck")
+    if (build.get("source_unchanged_during_export_and_validation") is not True
+            or not re.fullmatch(r"[0-9a-f]{64}", str(pck_hash))):
+        raise ValueError("Reviewed portable build provenance is missing")
+    portable = {}
+    for mode in ("menu", "duel", "heroes"):
+        result = read_json("artifacts/portable-validation-" + mode + ".json")
+        recorded = build.get("headless_checks", {}).get(mode, {})
+        if (result.get("failures") != [] or recorded.get("failures") != []
+                or result.get("launch_mode") != mode or result.get("pck_sha256") != pck_hash
+                or not number(result.get("passed")) or recorded.get("passed") != result["passed"]
+                or result.get("version") != recorded.get("version")):
+            raise ValueError("Portable launch-mode evidence differs from its reviewed build: " + mode)
+        portable[mode] = int(result["passed"])
+    viewer = read_json("artifacts/references/yoho/viewer-ui-validation.json")
+    checks = viewer.get("checks", [])
+    if viewer.get("failures") != [] or not checks or any(check.get("result") != "pass" for check in checks):
+        raise ValueError("Reference viewer UI evidence is missing or failed")
+    # The reviewed segments list has already checked every source and PNG hash.
+    # Bind the UI attestation to that exact list, without copying its URLs/paths.
+    segments_path = ROOT / "artifacts/references/yoho/segments.json"
+    hashes = {name.replace("\\", "/"): value for name, value in viewer.get("files", {}).items()}
+    if hashlib.sha256(segments_path.read_bytes()).hexdigest() != hashes.get("artifacts/references/yoho/segments.json"):
+        raise ValueError("Reference viewer segment list changed after UI review")
+    segments = read_json("artifacts/references/yoho/segments.json")
+    references, ours = segments.get("references", []), segments.get("ours", [])
+    if (len(references) != 2 or {item.get("source_url") for item in references} != PUBLIC_REFERENCE_URLS
+            or len(ours) != 1 or not all(item.get("frames") for item in references + ours)):
+        raise ValueError("Reviewed viewer requires the two public references and one H comparison")
+    return {"galleryChecks": int(gallery["passed"]), "galleryHeroes": len(heroes),
+            "portableByMode": portable, "portablePckSha256": pck_hash,
+            "referenceVideos": len(references), "referenceFrames": sum(len(item["frames"]) for item in references),
+            "comparisonFrames": len(ours[0]["frames"]), "referenceViewerUiChecks": len(checks),
+            "scope": "검토된 H 중간 빌드·감상 도구·참고 영상 분석의 범위입니다. 새 공방과 발목 후보의 완료 또는 전체 프레임 시각 검수를 뜻하지 않습니다."}
 
 
 def _completion_evidence(milestone: dict, milestone_id: str) -> dict:
@@ -197,6 +246,7 @@ def build() -> dict:
     m051_proof = m051_completion_evidence(m051)
     m05_complete = all(m05_proof.values())
     m051_complete = all(m051_proof.values())
+    development = current_development_evidence()
     m05_state = "complete" if m05_complete else "in_progress"
     m051_state = "complete" if m051_complete else "in_progress"
     movie_progress = "통합 보고 영상과 비공개 업로드를 검증했습니다." if m05_complete else "통합 보고 영상과 비공개 업로드는 검증 대기 중입니다."
@@ -221,7 +271,7 @@ def build() -> dict:
     individual_render = read_json("artifacts/individual-render-headless-tests.json")
     gpu_render = read_json("artifacts/individual-render-gpu-tests.json")
     pose = read_json("artifacts/hero-pose-tests.json")
-    portable = [read_json("artifacts/portable-validation-" + mode + ".json") for mode in ("menu", "duel")]
+    portable = [read_json("artifacts/portable-validation-" + mode + ".json") for mode in ("menu", "duel", "heroes")]
     ui = read_json("artifacts/ui-results.json")
     duel_sources = [read_json("artifacts/" + name) for name in (
         "duel-director-tests.json", "duel-matchups-tests.json",
@@ -274,8 +324,9 @@ def build() -> dict:
         card("contact", "전선 접촉과 개별 타격", "battle", "in_progress", "M05", "접근 → 공격 준비 → 타격 → 회복. 공간 격자로 개인 접촉을 계산합니다.", "첫 분리 모델은 제한된 후보와 위치 보정을 사용합니다. 완전한 비관통 물리가 아닙니다.", "전선 후보 축소, 아군 교차, 표적 점유와 좁은 통로 검증", "focus"),
         card("terrain", "연속된 3D 캠페인 지형", "campaign", m05_state, "M05", "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.", f"캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 {ui_checks}개 검사도 통과했습니다. {movie_progress}", "캠페인 조작·지형·군대 이동의 그래픽과 플레이 품질 확장", "focus"),
         card("campaign_armies", "지도 위 3D 군대와 장수", "campaign", m05_state, "M05", "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결했습니다.", "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. " + movie_progress, "군대 행군 동작·지형 상호작용과 전략 지도 콘텐츠 확장", "focus"),
-        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", m05_state, "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"일기토 합계 {duel_checks}개 headless 검사, 프로젝트 밖의 휴대용 실행 {portable_checks}개 검사 통과. 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. {movie_progress}", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
-        card("hero_models", "여포·관우·장비·마초 모델", "graphics", "in_progress", "M05", "얼굴·수염·체형·갑옷·전용 무기를 구분한 네 명의 근접용 하마 모델과 강체 관절 기반 양손 IK를 제작했습니다.", f"실사화 r2 모델을 실제 GPU에서 확인했습니다. 포즈 {pose_checks}개 검사 / {pose_samples:,}개 표본에서 팔 길이·관절 원점·양손과 무기 연결을 확인했습니다. 전신 스키닝과 실제 무기 충돌 판정은 별도 과제입니다.", "전용 무기 동작·접촉 연출과 얼굴·의복 품질 확장", "focus"),
+        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", m05_state, "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"일기토 합계 {duel_checks}개 headless 검사. 이후 H 개선 빌드의 메뉴 {development['portableByMode']['menu']}개·일기토 {development['portableByMode']['duel']}개·장수 감상 {development['portableByMode']['heroes']}개, 합계 {portable_checks}개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다. {movie_progress}", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
+        card("hero_models", "여포 H 중간 개선과 네 장수 모델", "graphics", "in_progress", "M05.1", "여포의 머리 비례·갈라진 허벅지 갑주·얼굴과 손 재질을 보정한 H 모델을 현재 검증 빌드에 채택했습니다. 관우·장비·마초와 원화의 개성을 3D로 맞추는 작업은 계속됩니다.", f"실제 H 화면 검수와 네 모델의 포즈 {pose_checks}개 검사 / {pose_samples:,}개 표본을 확인했습니다. 손의 큰 자기 몸 관통은 개선됐으나 상대 몸통에서의 회수·얼굴 횡단·갑주와 피부의 미술 격차가 남습니다. 독립 발목 I는 제작 중인 별도 후보입니다.", "장수의 위용·얼굴 식별·재질을 원화와 맞추고 발목 후보와 가중 스키닝 검수", "focus"),
+        card("hero_gallery", "네 장수의 원화·3D 동작 감상", "graphics", "complete", "M05.1 · 감상 도구", "여포·관우·장비·마초 원화와 실제 3D 모델을 나란히 보고 회전·확대·전신·얼굴·대기·공격·방어를 선택하는 별도 감상 모드를 연결했습니다.", f"감상 기능 {development['galleryChecks']}개 검사와 실제 화면 검수. 동작별 카메라 맞춤, 얼굴 보기의 무기 숨김·복구, 수동 회전·확대를 확인했습니다. 네 장수 3D 품질이나 실제 일기토 공방을 완료한 판정은 아닙니다.", "모델·클립 개선 때 얼굴·전신 구도와 동작 감상 재검수"),
         card("models", "인물·기병·말 모델 개선", "graphics", complete03, "M03", "인체 기반 얼굴, 피부 색상·노멀 재질과 병사·기병·말 8종을 개선했습니다.", "모델·재질 검사, 확대 GPU 화면, 실행 빌드와 마일스톤 영상 확인.", "골격 리깅, 보행·공격·피격 동작과 재질 품질 확장"),
         card("lod", "근접 공간 분할과 그림자 LOD", "performance", complete031, "M03.1", "가까운 공간 구역만 상세 모델로 표현해 근접 렌더 비용을 줄였습니다.", "GPU 354검사, 병사 수 보존, 동일 조건 근접·원거리 측정.", "새 개별 전투 통합 후 같은 조건에서 다시 측정"),
         card("campaign_base", "캠페인 기본 운영", "campaign", "complete", "기반", "8세력·30도시, 계절·세금·식량·민심·도시 건설·군대 운용을 연결했습니다.", "현재 기능 범위 문서에 기록된 실행 가능한 기본 시스템.", "세력별 구조·정치·경제·지도 콘텐츠를 확장"),
@@ -284,6 +335,8 @@ def build() -> dict:
         card("mod_runtime", "원작 모드·튜닝 플레이 비교", "modding", "in_progress", "M04", "기존 모드 구성의 내장 전투와 새 유비 캠페인에서 군대 이동·초기 전투·결정적 승리·캠페인 복귀를 실제 확인했습니다.", f"9월 9일 내장 전투 CSV {original_metrics['frame_count']:,}프레임 / {original_metrics['total_frame_time_seconds']:.3f}초, 전체 행 평균 {original_metrics['average_fps']:.3f} FPS. 9월 10일 1,263 대 721명 초기 전투와 장비 일기토 시작 확인. 일기토 개별 결과는 미확인이며 이 원작 FPS를 Godot와 비교하지 않습니다.", "실제 저장·재실행·리플레이 재생·근접 일기토·같은 조건의 품질 후보·패치 효과 확인"),
         card("soldier_animation", "상대를 향한 병사 무기와 관절 동작", "graphics", m051_state, "M05.1", "창을 교전 상대 앞으로 낮추고 칼·방패·활·쇠뇌의 서로 다른 동작을 실제 개인 공격·이동 위상에 연결했습니다.", f"Blender v4 자산 7종 × 3 LOD. {soldier_animation_checks}개 검사 / {soldier_pose_samples:,}개 자세에서 무기 길이·팔 관절·방향을 확인했습니다. GPU {gpu_checks}개 렌더 검사와 근접 화면 검수를 수행했습니다. 고정 프레임 검수는 실시간 FPS가 아닙니다.", "무기 궤적 충돌·지형 발 접지·기병과 말 동작 품질 확장", "focus"),
         card("hero_animation", "장수마다 다른 전신 공격", "graphics", m051_state, "M05.1", "Blender의 28개 컨트롤 Action을 일기토에 연결해 여포 횡베기·관우 중량 베기·장비와 마초의 찌르기에 몸통 회전과 앞발 이동을 넣었습니다.", f"장수 동작 {hero_animation_checks}개 검사, 장수마다 569프레임의 베이크와 실제 GPU 준비·타격·피격·받아치기 검수. {('통합 영상과 비공개 업로드를 확인했습니다.' if m051_complete else 'M05.1 통합 영상과 비공개 업로드는 아직 검증 중입니다.')}", "서로 맞물리는 무기 접촉·타격 후 빼기·다방향 연속기·전신 스키닝", "focus"),
+        card("paired_motion", "두 장수가 맞물리는 공방과 발 접지", "battle", "in_progress", "M05.1", "진입·위협·접촉·상대 반응·무기 회수·간격 회복을 하나의 시간축과 두 인물의 이동 곡선으로 연결하는 작업을 진행합니다.", "H 첫 공격 58프레임 비교에서 몸통에 겹친 채 회복, 얼굴을 가로지르는 무기, 큰 자세 변화, HP·반응 시차와 약한 발 접지를 확인했습니다. 현재 H 빌드에는 새 맞춤 공방과 독립 발목 I 후보가 통합 완료되지 않았습니다.", "Blender 두 인물 제작 장면·접촉 표식·발목과 발바닥 앵커를 게임 재생에 연결하고 실제 근접 화면 검수", "focus"),
+        card("reference_viewer", "원작·제작본 프레임 비교 도구", "tooling", "complete", "M05.1 · 참고 분석", f"공개 원작 영상 {development['referenceVideos']}개의 추출 {development['referenceFrames']}프레임과 H 첫 공격 {development['comparisonFrames']}프레임을 독립적으로 이동·재생·확대하는 로컬 비교 도구를 검증했습니다.", f"원본 PTS와 29.97·25FPS, H의 30FPS를 구분했습니다. 실제 브라우저 조작 {development['referenceViewerUiChecks']}건 통과. 주력 구간은 연속 64프레임의 잘라낸 장면표·전체 해상도 1장·간격을 둔 개요 17개를 확인했으며 전체 439장을 모두 시각 검수한 것은 아닙니다.", "두 장수의 공통 시간축·회피·낮아짐·거리 회복을 새 공방 제작과 비교 검수에 적용"),
         card("animation", "병사·말 스키닝과 지면 접지", "graphics", "planned", "후속", "현재 강체 관절과 GPU 해석 동작을 넘어 가중치 스키닝·지형 발 IK·말 골격과 발굽 접지를 확장합니다.", "M05.1의 관절 동작이 자연스러운 전신 스키닝과 접지까지 완성했다는 뜻은 아닙니다.", "발 미끄러짐과 관절 경계가 보이는 근접 장면부터 개선", "focus"),
         card("officer_roster", "가능한 많은 유니크 장수 명부", "campaign", "in_progress", "콘텐츠 확장", f"삼국지 14 공식 이름 목록 {roster_count:,}개 ID를 등록했습니다. 다른 작품의 추가 인물도 신원·출처를 확인해 확장하며 인원 상한을 두지 않습니다.", f"한글 이름 {roster_metrics['koreanNames']}명. 동명이인은 ID를 분리했습니다. 원화 {portrait_count}명·3D 모델 {model_count}명·독립 일기토 {duel_count}명이며, {roster_count:,}명이 플레이 가능하다는 뜻은 아닙니다.", "남은 한글 이름·연의와 정사 출전·중복 신원 검토 후 장수 데이터와 플레이 통합", "focus"),
         card("officer_portraits", "연의 특징을 살린 독자 장수 원화", "graphics", "in_progress", "콘텐츠 확장", f"여포·관우·장비·마초·조운·황충·전위·조조·유비·손권·제갈량·주유, 첫 {portrait_count}명의 그림을 개별 생성했습니다.", f"12개 서로 다른 1,024×1,536 PNG를 직접 검토하고 원본·게임 리소스·갤러리 사본의 SHA-256 일치를 확인했습니다. 공개 장수 명부에서 그림과 제작 상태를 볼 수 있습니다.", "다음 장수 묶음의 얼굴·복식·무기·연령을 개별 설계하고 추가 제작", "focus"),
@@ -291,19 +344,19 @@ def build() -> dict:
         card("siege", "공성 통로와 성벽 위 교전", "battle", "planned", "후속", "문·벽·사다리의 통로 용량과 높이 층을 전투 경로에 반영합니다.", "현재 성문·내구도·투석 규칙은 기본 구현. 성벽 위 이동은 확장 대상.", "좁은 문 통과, 열린 문·파괴된 벽 경로 변경 검사"),
         card("diplomacy", "장수·정치·외교 확장", "campaign", "planned", "M07", "인물 관계·장비·조정·복합 협상·수행 부대 구조를 확장합니다.", "기본 장수·외교·개혁은 존재하며 원작 전체 구조는 아직 없습니다.", "관계·직위·협상 기능의 플레이 시나리오 설계"),
         card("native", "시뮬레이션 병목 개선", "performance", "in_progress", "병행", "C++ 접촉 계산을 연결하고 기능·그래픽 작업과 병행해 비용을 줄였습니다.", f"{physics_checks}개 기능 검사 통과. 보존된 M05의 25,664명 상태 모듈 접촉 중앙값 {physics_metrics['contact_median_ms']:.3f}ms / p99 {physics_metrics['contact_p99_ms']:.3f}ms. 새 병렬 회귀 실행이나 통합 전투 FPS와 다른 측정입니다.", "같은 알고리즘·병력·장면의 통합 렌더 비용과 기능 결과 비교"),
-        card("engine", "엔진·도구·모드 선택 재검토", "tooling", "in_progress", "매 단계", "Godot 개선, 다른 엔진, 전용 모듈, 원작 모드 경로를 단계마다 비교합니다.", "현재 경로는 Godot와 Blender. 다른 엔진의 우위를 아직 측정하지 않았습니다.", "기능·그래픽 효과, 제작 비용, 호환성과 성능을 함께 판단"),
+        card("engine", "엔진·도구·모드 선택 재검토", "tooling", "in_progress", "매 단계", "검증된 Godot 실행을 유지하며 Blender 두 인물 제작·공유 클립 도구를 선택했습니다. Unreal·Unity·전용 엔진과 원작 모드 경로도 마일스톤마다 검토합니다.", "현재 그래픽과 공방의 격차를 다른 엔진 이전이 실제로 해소했다는 비교 증거는 없습니다. 참고 목록의 TPU모드 표기는 보존하지만 원작 무모드·단일 모드의 통제 A/B 비교는 아직 미검증입니다.", "동일 장수·동작·조명 장면의 표현과 제작 비용, 모드 호환·품질 효과를 확인"),
         card("replay", "재현 가능한 전투·리플레이", "battle", "planned", "후속", "고정 틱·명령 기록·개별 상태 저장으로 같은 전투를 재현합니다.", "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.", "상태 해시와 저장·복원 후 결과 일치 확인"),
     ]
     parity = [
-        {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"연속 3D 지형과 군대 표시", "level":"기반 구현"},
-        {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 장수 26명 데이터", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"지도 위 장수·깃발과 군대 이동", "level":"기반 구현"},
+        {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
+        {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
         {"area":"외교·개혁", "domain":"campaign", "current":"전쟁·화친·선물·교역·동맹·통행, 개혁 8개", "gap":"복합 거래·영토 교환·속국·연합 정치·전체 개혁 트리", "next":"캠페인 구조 확장", "level":"기반 구현"},
-        {"area":"개별 병사 전투", "domain":"battle", "current":"개인 위치·속도·HP·접촉·공격 모듈과 통합 작업", "gap":"전선 점유·아군 비관통·정교한 무기 접촉·규모 성능", "next":"실제 전투 연결과 수치·영상 검증", "level":"개발 중"},
+        {"area":"개별 병사 전투", "domain":"battle", "current":"개인 위치·속도·HP·접촉·공격 모듈의 전투 연결, 상대 방향의 무기와 관절 동작", "gap":"전선 점유·아군 비관통·정교한 무기 접촉·규모 성능", "next":"개별 접촉·회수·발 접지의 실제 화면 품질 개선", "level":"M05 기반 완료 · 동작 개선 중"},
         {"area":"전술·AI", "domain":"battle", "current":"진형·상성·측후방·돌격·사기·패주, 기본 AI", "gap":"장기 작전·협공·포위·증원·세밀한 시야와 은폐", "next":"개인 접촉과 전술 규칙 결합", "level":"기반 구현"},
         {"area":"공성·물리", "domain":"battle", "current":"성문·성벽 내구도·투석·화공·중앙 진입 경로", "gap":"성벽 위 전투·사다리·공성탑·복합 도시 길 찾기", "next":"장애물과 통로 용량 모델", "level":"기반 구현"},
-        {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·교전 무기 방향·해석적 팔과 발 동작", "gap":"AAA 수준 스캔·의상 세트·전신 스키닝·지형 접지·말 골격", "next":"리깅·무기 접촉·발 미끄러짐·지형 그래픽 확장", "level":"개선 진행"},
+        {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·여포 H 비례와 갑주 개선·네 장수 원화/3D 감상", "gap":"원화와 3D의 미술 격차·가중 스키닝·지형 접지·말 골격·의상 품질", "next":"독립 발목 후보 검수, 장수의 위용·얼굴·갑옷 재질 개선", "level":"H 중간 개선 · 품질 제작 중"},
         {"area":"사운드·제품 완성도", "domain":"graphics", "current":"합성 배경음·북소리, 한국어 UI, 캠페인 저장", "gap":"장수 음성·전체 효과음·멀티플레이·튜토리얼·접근성", "next":"핵심 기능 검증 후 범위별 확장", "level":"기반 구현"},
-        {"area":"장군 일기토", "domain":"battle", "current":"독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과", "gap":"자기 몸 관통·무기 접촉의 정교함·발 접지·다방향 연속기·전신 스키닝", "next":"몸과 손·무기 간격 수정, 실제 접촉과 회복 연출의 영상 재검수", "level":"M05 기반 완료 · M05.1 개선 중"},
+        {"area":"장군 일기토", "domain":"battle", "current":"독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과, 원본/H 프레임 비교", "gap":"맞물리는 공방·상대 몸통에서의 무기 회수·얼굴 횡단·자세 전환·발 접지·가중 스키닝", "next":"공통 시간축과 두 인물 이동·접촉·반응·거리 회복을 실제 교전에 연결", "level":"M05 기반 완료 · M05.1 개선 중"},
         {"area":"유니크 장수·원화", "domain":"graphics", "current":f"공식 참고 명부 {roster_count:,}개 ID · 독자 원화 {portrait_count}명 · 3D 모델 {model_count}명 · 독립 일기토 {duel_count}명", "gap":"명부 전체 플레이 통합·추가 일러스트·한글 이름·연의와 정사 구분·다른 작품 추가 인물", "next":"인물별 출처·특징을 확인하며 원화와 장수 콘텐츠 확대", "level":"첫 제작 묶음"},
         {"area":"원작 모드·튜닝", "domain":"modding", "current":"공식 도구·내장 전투 CSV·신규 캠페인 초기 전투 승리와 지도 복귀·장비 일기토 시작", "gap":"실제 저장·재실행·리플레이 재생·근접 동작과 모드 호환성·패치 효과", "next":"같은 조건의 반복·품질 후보 비교", "level":"실행 검증 진행"},
     ]
@@ -313,7 +366,7 @@ def build() -> dict:
         ("M03.1", "근접 렌더링 개선", complete031, "25,664명 표현 유지, 공간 분할·그림자 LOD"),
         ("M04", "원작 모드·튜닝 비교", "in_progress", "내장 전투 CSV, 신규 유비 캠페인 초기 전투 승리·장비 일기토 시작·지도 복귀 확인 · 저장·품질·호환성 비교 진행"),
         ("M05", "개별 전투·3D 캠페인·4장수 일기토", m05_state, "개인 이동·접촉, 연속 지형·3D 군대, 여포·관우·장비·마초와 별도 일기토 모드"),
-        ("M05.1", "병사 무기 자세·장수 전신 동작", m051_state, "교전 무기 방향·7종 병사 관절 동작·Blender 장수별 공격과 앞발 이동 · 몸 관통과 접촉 품질 재검수"),
+        ("M05.1", "병사 무기 자세·장수 전신 동작", m051_state, "여포 H 중간 개선·4장수 감상·원본 439/H 58프레임 비교 도구 확인 · 맞물리는 공방·독립 발목·가중 스키닝은 제작 중, 새 통합 영상·업로드 미완료"),
         ("후속", "접촉·공성·장수 콘텐츠·정치", "planned", "스키닝·기병 충격·성벽 경로·장수 원화와 플레이 통합·외교 확장"),
     ]:
         raw = milestones.get(key, {})
@@ -337,17 +390,26 @@ def build() -> dict:
         "originalGameRuntime":original_public,
         "integrationChecks":{"individualRenderHeadless":render_checks,"individualRenderGpu":gpu_checks,"individualRenderGpuVerified":gpu_verified,"duelHeadless":duel_checks,"portableHeadless":portable_checks,"heroPoseChecks":pose_checks,"heroPoseSamples":pose_samples,"uiGpu":ui_checks,"rigidJointTwoHandIkImplemented":True,"currentMilestoneVideoVerified":m051_complete},
         "animationChecks":{"soldierChecks":soldier_animation_checks,"soldierPoseSamples":soldier_pose_samples,"heroChecks":hero_animation_checks,"scope":"기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."},
+        "developmentEvidence":development,
         "officerCatalog":{**roster_metrics, "page":"officers.html", "scope":"공식 이름 목록의 참고 ID 수이며 현재 플레이 가능한 장수 수나 전 시리즈 최대 수가 아닙니다."},
         "milestoneCompletion":{"M05":m05_proof, "M05.1":m051_proof},
-        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", f"M05의 보존된 완료 영상과 M05.1의 새 애니메이션 작업을 구분합니다. 최신 검증 완료 버전은 {latest_verified}입니다.", "애니메이션의 관절·무기 길이 검사와 화면의 자연스러움은 다릅니다. 손·무기 관통, 접지와 실제 접촉을 영상으로 확인합니다.", "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.", "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."],
-        "sources":[{"label":"마일스톤 상태", "source":"milestones.json의 선택된 필드", "scope":"M03·M03.1 기록, M05·M05.1의 로컬 영상·실제 캡처·비공개 업로드 근거 확인"}, {"label":"기능 범위", "source":"FEATURES.md의 수동 검토 요약", "scope":"현재 기능과 생략·단순화된 범위를 분리"}, {"label":"물리 알고리즘", "source":"BATTLE_PHYSICS.md + 보존된 M05 측정과 새 기능 검사", "scope":"첫 모듈 시간과 새 병렬 회귀 시간·통합 FPS를 구별"}, {"label":"장수와 애니메이션", "source":"OFFICER_ROSTER.md / HERO_ANIMATION.md / SOLDIER_ANIMATION.md", "scope":"명부·원화·모델·플레이 가능 수와 관절 동작·품질 차이를 구별"}, {"label":"엔진·모드 경로", "source":"ENGINE_DECISIONS.md / ORIGINAL_GAME.md 요약", "scope":"도구 준비와 실제 원작 검증을 분리"}],
+        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", f"M05의 보존된 완료 영상과 M05.1의 새 애니메이션 작업을 구분합니다. 최신 검증 완료 버전은 {latest_verified}입니다.", "애니메이션의 관절·무기 길이 검사와 화면의 자연스러움은 다릅니다. 손·무기 관통, 접지와 실제 접촉을 영상으로 확인합니다.", "참고 프레임 추출·뷰어 검증과 실제 시각 검수 범위는 별도입니다. 두 원작 영상과 H의 FPS를 통일하거나 보간하지 않습니다.", "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다. TPU 등 모드 표기 참고 자료와 무모드·단일 모드의 통제 비교를 구분합니다.", "마일스톤 영상은 비공개로 보관합니다. 확인한 공개 참고 영상 두 개만 출처에 연결하며 개인 영상·계정·로컬 원본 파일을 공개하지 않습니다."],
+        "sources":[{"label":"마일스톤 상태", "source":"milestones.json의 선택된 필드", "scope":"M03·M03.1 기록, M05·M05.1의 로컬 영상·실제 캡처·비공개 업로드 근거 확인"}, {"label":"기능 범위", "source":"FEATURES.md의 수동 검토 요약", "scope":"현재 기능과 생략·단순화된 범위를 분리"}, {"label":"물리 알고리즘", "source":"BATTLE_PHYSICS.md + 보존된 M05 측정과 새 기능 검사", "scope":"첫 모듈 시간과 새 병렬 회귀 시간·통합 FPS를 구별"}, {"label":"장수와 애니메이션", "source":"OFFICER_ROSTER.md / HERO_ANIMATION.md / SOLDIER_ANIMATION.md", "scope":"명부·원화·모델·플레이 가능 수와 관절 동작·품질 차이를 구별"}, {"label":"엔진·모드 경로", "source":"ENGINE_DECISIONS.md / ORIGINAL_GAME.md 요약", "scope":"도구 준비와 실제 원작 검증을 분리"},
+                   {"label":"공개 원작 참고 · YOHO요호", "source":"오호대장군 VS 전위 일기토 대전:삼국지 토탈워", "url":"https://www.youtube.com/watch?v=EhPbt8CLEFo", "scope":"199–207초 239프레임 추출. 연속 64프레임의 두 인물 진입·도약·낮아짐·거리 회복 관찰. 해당 구간 인물 이름·정확한 충돌 결과는 미확정"},
+                   {"label":"공개 원작 참고 · YOHO요호", "source":"1.3.0 패치 추가 전설장수 황개 vs 여포: 일기토대전", "url":"https://www.youtube.com/watch?v=Qp-6yLLrPzI", "scope":"40–48초 200프레임 추출, 원본 25FPS 보존. 추출·뷰어 확인을 전 프레임 동작 분석 완료로 표시하지 않음"}],
         "snapshotNote":"자동 실시간 상태가 아닌 검토된 공개 스냅샷입니다. 기능 카드 분류는 담당자가 갱신하고 생성기가 허용된 수치만 추출합니다.",
     }
 
 
 def validate(data: dict) -> None:
-    text = json.dumps(data, ensure_ascii=False)
-    forbidden = [r"https?://(?:www\.)?(?:youtu\.be|youtube\.com)", r"[A-Za-z]:[\\/]", r"file://", r"\bUC[A-Za-z0-9_-]{22}\b", r"\b3k_[A-Za-z0-9_]+\b"]
+    export_check = json.loads(json.dumps(data, ensure_ascii=False))
+    for source in export_check.get("sources", []):
+        if "url" in source:
+            if source["url"] not in PUBLIC_REFERENCE_URLS:
+                raise ValueError("Only the two reviewed public reference URLs may be exported")
+            source["url"] = "reviewed-public-reference"
+    text = json.dumps(export_check, ensure_ascii=False)
+    forbidden = [r"https?://(?:[A-Za-z0-9-]+\.)?(?:youtu\.be|youtube\.com)", r"[A-Za-z]:[\\/]", r"file://", r"https?://(?:127\.0\.0\.1|localhost)", r"artifacts[/\\]references", r"res://", r"\bUC[A-Za-z0-9_-]{22}\b", r"\b3k_[A-Za-z0-9_]+\b"]
     for expression in forbidden:
         if re.search(expression, text, re.IGNORECASE):
             raise ValueError("Public export rejected: forbidden private/local content")

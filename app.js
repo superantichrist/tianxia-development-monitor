@@ -112,7 +112,7 @@
     setText("#physics-budget", tickBudget === null ? "목표 주기 검증 대기" : withinBudget ? `${numeric(1 / physics.dt)}Hz 틱 한도 ${numeric(tickBudget)}ms 이내인 이번 모듈 측정. 통합 프레임 성능은 별도 확인합니다.` : `목표 ${numeric(1 / physics.dt)}Hz / 틱 한도 ${numeric(tickBudget)}ms · 현재 대규모 접촉은 목표 미달`);
     setText("#physics-conditions", `${numeric(physics.agents)}명 영속 상태 · 최대 활성 ${numeric(physics.maximum_active_agents)}명 · ${numeric(physics.measured_steps)}스텝 측정 · 비접촉 휴면 중앙값 ${withUnit(physics.idle_median_ms, "ms", 3)}`);
     $("#evidence-policy").innerHTML = data.evidencePolicy.map((text) => `<li>${escape(text)}</li>`).join("");
-    $("#evidence-sources").innerHTML = data.sources.map((source) => `<div class="evidence-source"><strong>${escape(source.label)}</strong><div><p>${escape(source.source)}</p><small>${escape(source.scope)}</small></div></div>`).join("");
+    $("#evidence-sources").innerHTML = data.sources.map((source) => `<div class="evidence-source"><strong>${escape(source.label)}</strong><div><p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">${escape(source.source)} ↗</a>` : escape(source.source)}</p><small>${escape(source.scope)}</small></div></div>`).join("");
   }
 
   function initialize() {
