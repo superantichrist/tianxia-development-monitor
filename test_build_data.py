@@ -270,9 +270,10 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         self.addCleanup(root_patch.stop)
         self.write("artifacts/hero-gallery-tests.json", {
             "passed": 126, "failures": [], "private_note": "private-gallery-path",
-            "heroes": [{"hero": hero, "authored": True, "model": "res://private/model.glb"}
+            "heroes": [{"hero": hero, "authored": True, "model": "res://private/model.glb",
+                        "model_sha256": build_data.REVIEWED_H_MODEL_SHA256 if hero == "lubu" else "c" * 64}
                        for hero in ("lubu", "guanyu", "zhangfei", "machao")]})
-        self.pck_hash = "a" * 64
+        self.pck_hash = build_data.REVIEWED_H_PCK_SHA256
         self.build = {"source_unchanged_during_export_and_validation": True,
                       "packaged_sha256": {"Tianxia.pck": self.pck_hash}, "headless_checks": {}}
         for mode in ("menu", "duel", "heroes"):
@@ -319,6 +320,26 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         self.segments["references"][0]["frames"].append({"src": "added-frame"})
         self.segments_path.write_text(json.dumps(self.segments), encoding="utf-8")
         with self.assertRaises(ValueError):
+            build_data.current_development_evidence()
+
+    def test_same_check_counts_cannot_relabel_new_model_or_build_as_h(self):
+        gallery_path = self.root / "artifacts/hero-gallery-tests.json"
+        gallery = json.loads(gallery_path.read_text(encoding="utf-8"))
+        gallery["heroes"][0]["model_sha256"] = "d" * 64
+        gallery_path.write_text(json.dumps(gallery), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "gallery model changed"):
+            build_data.current_development_evidence()
+        gallery["heroes"][0]["model_sha256"] = build_data.REVIEWED_H_MODEL_SHA256
+        gallery_path.write_text(json.dumps(gallery), encoding="utf-8")
+        new_pck = "e" * 64
+        self.build["packaged_sha256"]["Tianxia.pck"] = new_pck
+        self.write("build/Tianxia/build-manifest.json", self.build)
+        for mode in ("menu", "duel", "heroes"):
+            path = self.root / ("artifacts/portable-validation-" + mode + ".json")
+            result = json.loads(path.read_text(encoding="utf-8"))
+            result["pck_sha256"] = new_pck
+            path.write_text(json.dumps(result), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "packaged build changed"):
             build_data.current_development_evidence()
 
 

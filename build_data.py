@@ -19,6 +19,8 @@ PUBLIC_REFERENCE_URLS = frozenset({
     "https://www.youtube.com/watch?v=EhPbt8CLEFo",
     "https://www.youtube.com/watch?v=Qp-6yLLrPzI",
 })
+REVIEWED_H_PCK_SHA256 = "c23dbc83e0a80b94ba0a306f508648038576928407a74162a9e2510911c7308c"
+REVIEWED_H_MODEL_SHA256 = "502ac2f3e2b39e619be15eafc22ac86f5a8bf23f2afae186f12057ce2d886595"
 
 
 def read_json(relative: str) -> dict:
@@ -51,11 +53,16 @@ def current_development_evidence() -> dict:
             or {hero.get("hero") for hero in heroes} != {"lubu", "guanyu", "zhangfei", "machao"}
             or not all(hero.get("authored") is True for hero in heroes)):
         raise ValueError("Four-hero gallery evidence is missing or failed")
+    lubu = next(hero for hero in heroes if hero["hero"] == "lubu")
+    if lubu.get("model_sha256") != REVIEWED_H_MODEL_SHA256:
+        raise ValueError("The gallery model changed after the reviewed H snapshot; review and update the public scope before regeneration")
     build = read_json("build/Tianxia/build-manifest.json")
     pck_hash = build.get("packaged_sha256", {}).get("Tianxia.pck")
     if (build.get("source_unchanged_during_export_and_validation") is not True
             or not re.fullmatch(r"[0-9a-f]{64}", str(pck_hash))):
         raise ValueError("Reviewed portable build provenance is missing")
+    if pck_hash != REVIEWED_H_PCK_SHA256:
+        raise ValueError("The packaged build changed after the reviewed H snapshot; review and update the public scope before regeneration")
     portable = {}
     for mode in ("menu", "duel", "heroes"):
         result = read_json("artifacts/portable-validation-" + mode + ".json")
