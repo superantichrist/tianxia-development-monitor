@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#152624">
+  <meta name="description" content="천하의 장수 제작 명부와 독자 일러스트. 1,000개 공식 참고 항목에서 시작해 그림, 3D 모델, 일기토 구현 상태를 구분합니다.">
+  <title>천하 — 장수 명부와 일러스트</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23152624'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-size='44' fill='%23e8cf96'%3E天%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="officers.css">
+  <script defer src="officers.js"></script>
+</head>
+<body class="officers-page">
+  <a class="skip-link" href="#officer-workspace">본문으로 이동</a>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="천하 개발 관측소"><span class="seal" aria-hidden="true">天</span><span><strong>천하 <span>TIANXIA</span></strong><small>개발 관측소</small></span></a>
+    <nav class="view-nav" aria-label="관측소 메뉴"><a href="index.html#board">개발 보드</a><a href="index.html#parity">기능과 격차</a><a href="index.html#evidence">검증 기록</a><a href="officers.html" class="active" aria-current="page">장수 명부</a></nav>
+    <div class="snapshot-mark"><span class="status-dot"></span>제작 현황 스냅샷</div>
+  </header>
+  <main>
+    <section class="officer-intro" aria-labelledby="officer-title">
+      <div><div class="eyebrow">PEOPLE OF THE THREE KINGDOMS</div><h1 id="officer-title">천 명의 이름,<br><span>각자의 얼굴로.</span></h1><p>연의 속 인물의 무기와 복식, 나이와 기개를 살린<br class="wide-only"> 천하의 장수 일러스트를 만들어갑니다.</p></div>
+      <div class="roster-context"><span class="intro-seal" aria-hidden="true">列<br>傳</span><div><span class="eyebrow">명부에서 플레이까지</span><h2>이름 · 일러스트 · 모델 · 일기토</h2><p>코에이 삼국지 14의 공식 이름 목록을 출발점으로 삼았습니다. 인원 상한을 두지 않고 다른 작품의 추가 인물도 출처와 신원을 확인해 확장합니다.</p><p>아래의 그림은 이 프로젝트에서 새로 생성한 원화입니다. 명부 등록은 게임에 플레이 가능한 인물이 구현됐다는 뜻이 아닙니다.</p></div></div>
+    </section>
+    <section class="officer-metrics" aria-label="장수 제작 현황">
+      <div><span>공식 참고 명부</span><strong id="roster-total">—</strong><small>서로 다른 참고 ID</small></div>
+      <div><span>독자 일러스트</span><strong id="portrait-total">—</strong><small>그림 파일 제작</small></div>
+      <div><span>3D 모델</span><strong id="model-total">—</strong><small>관절로 움직이는 초기 모델</small></div>
+      <div><span>독립 일기토</span><strong id="duel-total">—</strong><small>선택 · 대결 가능한 장수</small></div>
+    </section>
+    <div class="catalog-notes"><p id="translation-note">명부를 불러오는 중입니다.</p><p>연의·정사 구분은 인물별 검토 중입니다. 동명이인은 참고 ID를 따로 보존합니다.</p></div>
+    <section class="officer-workspace" id="officer-workspace" aria-labelledby="collection-title">
+      <div class="section-heading"><div><div class="eyebrow">CHARACTER COLLECTION</div><h2 id="collection-title">장수의 얼굴과 제작 기록</h2></div><p>그림을 누르면 원본과 특징을 크게 볼 수 있습니다.</p></div>
+      <div class="officer-toolbar">
+        <div class="collection-tabs" role="group" aria-label="표시 방식"><button type="button" data-display="gallery" class="active" aria-pressed="true">일러스트 갤러리</button><button type="button" data-display="roster" aria-pressed="false">전체 명부</button></div>
+        <label class="officer-filter"><span class="sr-only">제작 상태</span><select id="officer-filter"><option value="all">모든 제작 상태</option><option value="illustrated">일러스트 있음</option><option value="queued">일러스트 미제작</option><option value="model">3D 모델 있음</option><option value="duel">독립 일기토 가능</option><option value="untranslated">한글 이름 검토 대기</option><option value="homonym">동명이인 확인 필요</option></select></label>
+        <label class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg><span class="sr-only">장수 이름 검색</span><input id="officer-search" type="search" placeholder="한글 · 한자 · 참고 ID 검색" autocomplete="off"></label>
+      </div>
+      <div class="results-bar"><span id="officer-results" role="status" aria-live="polite">불러오는 중…</span><span id="display-note">그림이 제작된 장수부터 보여드립니다.</span><button id="officer-reset" type="button" hidden>검색과 필터 초기화</button></div>
+      <div id="catalog-error" class="catalog-error" role="alert" hidden><strong>명부를 불러오지 못했습니다.</strong><p>페이지를 다시 열거나 <a href="officers.json">공개 명부 JSON</a>을 확인해주세요.</p><button type="button" id="catalog-retry">다시 불러오기</button></div>
+      <div id="portrait-grid" class="portrait-grid" aria-label="장수 일러스트"></div>
+      <div id="roster-wrap" class="roster-wrap" hidden><table class="roster-table"><caption class="sr-only">장수별 원화, 3D 모델, 독립 일기토 제작 상태</caption><thead><tr><th scope="col">장수 · 참고 ID</th><th scope="col">일러스트</th><th scope="col">3D 모델</th><th scope="col">독립 일기토</th><th scope="col">명부 검토</th></tr></thead><tbody id="roster-body"></tbody></table></div>
+      <div id="officer-empty" class="empty-state" hidden><strong>조건에 맞는 장수가 없습니다.</strong><p>한자 이름이나 다른 제작 상태로 다시 찾아보세요.</p></div>
+      <nav class="officer-pagination" aria-label="명부 페이지" id="officer-pagination" hidden><button type="button" id="page-first" aria-label="첫 페이지">처음</button><button type="button" id="page-prev">이전</button><span id="page-indicator" aria-live="polite"></span><button type="button" id="page-next">다음</button><button type="button" id="page-last" aria-label="마지막 페이지">마지막</button></nav>
+    </section>
+    <section class="roster-sources" aria-labelledby="source-title"><div><div class="eyebrow">SOURCE & SCOPE</div><h2 id="source-title">확장하는 명부의 기준</h2></div><div><p><a href="https://www.gamecity.com.tw/sangokushi14/officers-list.html" target="_blank" rel="noopener noreferrer">삼국지 14 공식 무장 목록 ↗</a>의 1,000개 이름 항목을 등록했습니다. 능력치·전기·코에이 일러스트는 가져오지 않았습니다. <a href="https://www.gamecity.ne.jp/sangokushi8-re/" target="_blank" rel="noopener noreferrer">삼국지 8 REMAKE 공식 페이지 ↗</a>의 1,000명 규모도 참고했으며, 작품 간 인물 명부를 합쳤다는 뜻은 아닙니다.</p><p>현재 수는 전 시리즈 최대 인원이나 연의 등장인물만의 확정 숫자가 아닙니다. 중복 신원 확인, 남은 한글 표기, 연의·정사 출전 구분을 계속 검토합니다. 다른 시대·크로스오버 보너스 인물은 이 삼국시대 기준 명부에 합산하지 않습니다.</p></div></section>
+  </main>
+  <footer class="site-footer"><span><strong>천하</strong> TIANXIA · CHARACTER COLLECTION</span><p id="catalog-date">검토된 공개 제작 스냅샷</p><a href="officers.json" download>장수 명부 JSON ↓</a></footer>
+  <dialog id="portrait-dialog" aria-labelledby="portrait-title"><button type="button" id="portrait-close" class="portrait-close" aria-label="그림 확대 닫기">×</button><div class="portrait-dialog-layout"><div class="portrait-stage"><img id="portrait-full" alt=""></div><div class="portrait-detail"><div class="eyebrow">ORIGINAL CHARACTER ART</div><h2 id="portrait-title"></h2><p id="portrait-han" class="portrait-han"></p><p id="portrait-direction" class="portrait-direction"></p><div id="portrait-status" class="portrait-status"></div><p id="portrait-reference" class="portrait-reference"></p><p id="portrait-size" class="portrait-size"></p><a id="portrait-original" class="portrait-original" target="_blank" rel="noopener">원본 크기로 열기 ↗</a><p class="portrait-scope">이 그림은 장수의 시각적 특징을 위한 원화입니다. 실제 게임의 3D 화면·애니메이션과 제작 단계가 다릅니다.</p></div></div></dialog>
+  <noscript><div class="noscript-message">갤러리와 검색에는 JavaScript가 필요합니다. <a href="officers.json">공개 명부 JSON</a> 또는 <a href="portraits/lubu.png">여포 원화</a>를 바로 볼 수 있습니다.</div></noscript>
+</body>
+</html>

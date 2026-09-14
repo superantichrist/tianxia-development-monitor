@@ -1,12 +1,14 @@
 window.MONITOR_DATA = {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-10T08:53:07+00:00",
+  "updatedAt": "2026-09-14T12:33:40+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
     "edition": "개발 관측소",
     "latestVerified": "0.4.0-dev",
-    "currentMilestone": "M05",
+    "currentMilestone": "M05.1",
+    "currentVersion": "0.4.1-dev",
+    "currentMilestoneTitle": "병사 무기 자세·장수 전신 동작",
     "goal": "캠페인부터 전장까지, 삼국지 토탈워와 동등한 수준을 최대한 추구합니다.",
     "policy": "기능·그래픽 확장을 우선하고, 최적화를 병행합니다.",
     "boundary": "현재는 독립 개발 중인 전략 게임입니다. 항목별 구현과 검증을 기록하며 전체 동등성이나 완성률을 주장하지 않습니다."
@@ -62,13 +64,13 @@ window.MONITOR_DATA = {
   "cards": [
     {
       "id": "individual",
-      "title": "병사마다 움직이는 전투",
+      "title": "개별 병사 전투 첫 통합",
       "domain": "battle",
-      "status": "in_progress",
+      "status": "complete",
       "milestone": "M05",
       "summary": "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결했습니다.",
-      "evidence": "모듈 270개·전투 통합 15개 검사. 렌더 연결 headless 584개와 실제 GPU 776개 검사를 통과했습니다. 개별 사망 후 ID 재배치·보간·LOD·그림자·행동 데이터를 GPU에서 읽어 확인했습니다.",
-      "next": "전체 캠페인·전투·일기토 마일스톤 영상 검증과 대규모 플레이 품질 개선",
+      "evidence": "모듈 270개·전투 통합 15개 검사. 렌더 연결 headless 584개와 실제 GPU 776개 검사를 통과했습니다. 개별 사망 후 ID 재배치·보간·LOD·그림자·행동 데이터를 GPU에서 읽어 확인했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "next": "개별 동작·전선 접촉과 대규모 플레이 품질 개선",
       "priority": "focus"
     },
     {
@@ -86,7 +88,7 @@ window.MONITOR_DATA = {
       "id": "terrain",
       "title": "연속된 3D 캠페인 지형",
       "domain": "campaign",
-      "status": "in_progress",
+      "status": "complete",
       "milestone": "M05",
       "summary": "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.",
       "evidence": "캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 19개 검사도 통과했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
@@ -97,21 +99,21 @@ window.MONITOR_DATA = {
       "id": "campaign_armies",
       "title": "지도 위 3D 군대와 장수",
       "domain": "campaign",
-      "status": "in_progress",
+      "status": "complete",
       "milestone": "M05",
-      "summary": "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결합니다.",
-      "evidence": "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. 완료 영상은 별도입니다.",
-      "next": "군대 선택·경로 이동·턴 전환의 통합 플레이 확인",
+      "summary": "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결했습니다.",
+      "evidence": "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "next": "군대 행군 동작·지형 상호작용과 전략 지도 콘텐츠 확장",
       "priority": "focus"
     },
     {
       "id": "duel_mode",
       "title": "별도로 실행하는 일기토 모드",
       "domain": "battle",
-      "status": "in_progress",
+      "status": "complete",
       "milestone": "M05",
       "summary": "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.",
-      "evidence": "일기토 합계 210개 headless 검사, 프로젝트 밖의 휴대용 실행 88개 검사 통과. 최신 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "evidence": "일기토 합계 210개 headless 검사, 프로젝트 밖의 휴대용 실행 100개 검사 통과. 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
       "next": "장수별 무기 접촉·전용 동작과 연출 확장",
       "priority": "focus"
     },
@@ -193,14 +195,58 @@ window.MONITOR_DATA = {
       "priority": "normal"
     },
     {
+      "id": "soldier_animation",
+      "title": "상대를 향한 병사 무기와 관절 동작",
+      "domain": "graphics",
+      "status": "in_progress",
+      "milestone": "M05.1",
+      "summary": "창을 교전 상대 앞으로 낮추고 칼·방패·활·쇠뇌의 서로 다른 동작을 실제 개인 공격·이동 위상에 연결했습니다.",
+      "evidence": "Blender v4 자산 7종 × 3 LOD. 196개 검사 / 6,363개 자세에서 무기 길이·팔 관절·방향을 확인했습니다. GPU 776개 렌더 검사와 근접 화면 검수를 수행했습니다. 고정 프레임 검수는 실시간 FPS가 아닙니다.",
+      "next": "무기 궤적 충돌·지형 발 접지·기병과 말 동작 품질 확장",
+      "priority": "focus"
+    },
+    {
+      "id": "hero_animation",
+      "title": "장수마다 다른 전신 공격",
+      "domain": "graphics",
+      "status": "in_progress",
+      "milestone": "M05.1",
+      "summary": "Blender의 28개 컨트롤 Action을 일기토에 연결해 여포 횡베기·관우 중량 베기·장비와 마초의 찌르기에 몸통 회전과 앞발 이동을 넣었습니다.",
+      "evidence": "장수 동작 29개 검사, 장수마다 569프레임의 베이크와 실제 GPU 준비·타격·피격·받아치기 검수. M05.1 통합 영상과 비공개 업로드는 아직 검증 중입니다.",
+      "next": "서로 맞물리는 무기 접촉·타격 후 빼기·다방향 연속기·전신 스키닝",
+      "priority": "focus"
+    },
+    {
       "id": "animation",
-      "title": "병사·말 골격 애니메이션",
+      "title": "병사·말 스키닝과 지면 접지",
       "domain": "graphics",
       "status": "planned",
       "milestone": "후속",
-      "summary": "리깅과 보행·공격·피격·사망 상태를 개인 전투 위상에 연결합니다.",
-      "evidence": "현재 GPU 변형 동작과 구분되는 제작 과제.",
-      "next": "보병·말 각 1종의 골격 동작을 먼저 전투에 연결",
+      "summary": "현재 강체 관절과 GPU 해석 동작을 넘어 가중치 스키닝·지형 발 IK·말 골격과 발굽 접지를 확장합니다.",
+      "evidence": "M05.1의 관절 동작이 자연스러운 전신 스키닝과 접지까지 완성했다는 뜻은 아닙니다.",
+      "next": "발 미끄러짐과 관절 경계가 보이는 근접 장면부터 개선",
+      "priority": "focus"
+    },
+    {
+      "id": "officer_roster",
+      "title": "가능한 많은 유니크 장수 명부",
+      "domain": "campaign",
+      "status": "in_progress",
+      "milestone": "콘텐츠 확장",
+      "summary": "삼국지 14 공식 이름 목록 1,000개 ID를 등록했습니다. 다른 작품의 추가 인물도 신원·출처를 확인해 확장하며 인원 상한을 두지 않습니다.",
+      "evidence": "한글 이름 81명. 동명이인은 ID를 분리했습니다. 원화 12명·3D 모델 4명·독립 일기토 4명이며, 1,000명이 플레이 가능하다는 뜻은 아닙니다.",
+      "next": "남은 한글 이름·연의와 정사 출전·중복 신원 검토 후 장수 데이터와 플레이 통합",
+      "priority": "focus"
+    },
+    {
+      "id": "officer_portraits",
+      "title": "연의 특징을 살린 독자 장수 원화",
+      "domain": "graphics",
+      "status": "in_progress",
+      "milestone": "콘텐츠 확장",
+      "summary": "여포·관우·장비·마초·조운·황충·전위·조조·유비·손권·제갈량·주유, 첫 12명의 그림을 개별 생성했습니다.",
+      "evidence": "12개 서로 다른 1,024×1,536 PNG를 직접 검토하고 원본·게임 리소스·갤러리 사본의 SHA-256 일치를 확인했습니다. 공개 장수 명부에서 그림과 제작 상태를 볼 수 있습니다.",
+      "next": "다음 장수 묶음의 얼굴·복식·무기·연령을 개별 설계하고 추가 제작",
       "priority": "focus"
     },
     {
@@ -241,9 +287,9 @@ window.MONITOR_DATA = {
       "title": "시뮬레이션 병목 개선",
       "domain": "performance",
       "status": "in_progress",
-      "milestone": "M05 병행",
+      "milestone": "병행",
       "summary": "C++ 접촉 계산을 연결하고 기능·그래픽 작업과 병행해 비용을 줄였습니다.",
-      "evidence": "270개 검사 통과. 25,664명 상태의 모듈 접촉 중앙값 17.571ms / p99 18.723ms. 통합 전투 FPS와 다른 CPU 스텝 측정입니다.",
+      "evidence": "270개 기능 검사 통과. 보존된 M05의 25,664명 상태 모듈 접촉 중앙값 17.571ms / p99 18.723ms. 새 병렬 회귀 실행이나 통합 전투 FPS와 다른 측정입니다.",
       "next": "같은 알고리즘·병력·장면의 통합 렌더 비용과 기능 결과 비교",
       "priority": "normal"
     },
@@ -322,9 +368,9 @@ window.MONITOR_DATA = {
     {
       "area": "모델·재질·표현",
       "domain": "graphics",
-      "current": "독자 3D 모델·2K 피부 재질·3단계 LOD·조명·환경",
-      "gap": "AAA 수준 스캔·의상 세트·모션 캡처·골격 동작",
-      "next": "리깅·개인 동작·지형 그래픽 확장",
+      "current": "독자 3D 모델·2K 피부 재질·3단계 LOD·교전 무기 방향·해석적 팔과 발 동작",
+      "gap": "AAA 수준 스캔·의상 세트·전신 스키닝·지형 접지·말 골격",
+      "next": "리깅·무기 접촉·발 미끄러짐·지형 그래픽 확장",
       "level": "개선 진행"
     },
     {
@@ -338,10 +384,18 @@ window.MONITOR_DATA = {
     {
       "area": "장군 일기토",
       "domain": "battle",
-      "current": "독립 모드·4장수 모델·강체 관절 양손 IK·2인 교전·받아치기·실제 HP와 결과",
-      "gap": "전신 스키닝·동작 세트·정교한 무기 충돌과 접촉 연출",
-      "next": "통합 보고 영상·전용 무기 동작과 얼굴·의복 품질 확장",
-      "level": "개발 중"
+      "current": "독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과",
+      "gap": "자기 몸 관통·무기 접촉의 정교함·발 접지·다방향 연속기·전신 스키닝",
+      "next": "몸과 손·무기 간격 수정, 실제 접촉과 회복 연출의 영상 재검수",
+      "level": "M05 기반 완료 · M05.1 개선 중"
+    },
+    {
+      "area": "유니크 장수·원화",
+      "domain": "graphics",
+      "current": "공식 참고 명부 1,000개 ID · 독자 원화 12명 · 3D 모델 4명 · 독립 일기토 4명",
+      "gap": "명부 전체 플레이 통합·추가 일러스트·한글 이름·연의와 정사 구분·다른 작품 추가 인물",
+      "next": "인물별 출처·특징을 확인하며 원화와 장수 콘텐츠 확대",
+      "level": "첫 제작 묶음"
     },
     {
       "area": "원작 모드·튜닝",
@@ -395,10 +449,18 @@ window.MONITOR_DATA = {
       "videoVerified": true
     },
     {
+      "id": "M05.1",
+      "title": "병사 무기 자세·장수 전신 동작",
+      "status": "in_progress",
+      "description": "교전 무기 방향·7종 병사 관절 동작·Blender 장수별 공격과 앞발 이동 · 몸 관통과 접촉 품질 재검수",
+      "checks": {},
+      "videoVerified": false
+    },
+    {
       "id": "후속",
-      "title": "애니메이션·공성·정치",
+      "title": "접촉·공성·장수 콘텐츠·정치",
       "status": "planned",
-      "description": "리깅·기병 충격·성벽 경로·장수·외교 확장",
+      "description": "스키닝·기병 충격·성벽 경로·장수 원화와 플레이 통합·외교 확장",
       "checks": {},
       "videoVerified": false
     }
@@ -425,7 +487,10 @@ window.MONITOR_DATA = {
     "dt": 0.05,
     "checks": 270,
     "contact_hits": 219,
-    "contact_deaths": 37
+    "contact_deaths": 37,
+    "timingMilestone": "M05",
+    "timingPreserved": true,
+    "timingScope": "보존된 M05 모듈 측정. 새 병렬 회귀 실행의 시간과 구별하며 통합 FPS로 주장하지 않습니다."
   },
   "originalGameRuntime": {
     "milestone": "M04",
@@ -452,23 +517,44 @@ window.MONITOR_DATA = {
     "individualRenderGpu": 776,
     "individualRenderGpuVerified": true,
     "duelHeadless": 210,
-    "portableHeadless": 88,
+    "portableHeadless": 100,
     "heroPoseChecks": 24,
     "heroPoseSamples": 1836,
     "uiGpu": 19,
     "rigidJointTwoHandIkImplemented": true,
-    "currentMilestoneVideoVerified": true
+    "currentMilestoneVideoVerified": false
+  },
+  "animationChecks": {
+    "soldierChecks": 196,
+    "soldierPoseSamples": 6363,
+    "heroChecks": 29,
+    "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
+  },
+  "officerCatalog": {
+    "referenceEntries": 1000,
+    "illustrations": 12,
+    "models": 4,
+    "duelPlayable": 4,
+    "koreanNames": 81,
+    "page": "officers.html",
+    "scope": "공식 이름 목록의 참고 ID 수이며 현재 플레이 가능한 장수 수나 전 시리즈 최대 수가 아닙니다."
   },
   "milestoneCompletion": {
     "M05": {
       "localVideoHashVerified": true,
       "captureEvidenceVerified": true,
       "privateUploadVerified": true
+    },
+    "M05.1": {
+      "localVideoHashVerified": false,
+      "captureEvidenceVerified": false,
+      "privateUploadVerified": false
     }
   },
   "evidencePolicy": [
     "완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.",
-    "M05는 모듈·headless 검사와 통합 GPU·규모 성능·플레이 영상 검증을 구분합니다. 최신 검증 완료 버전은 0.4.0-dev입니다.",
+    "M05의 보존된 완료 영상과 M05.1의 새 애니메이션 작업을 구분합니다. 최신 검증 완료 버전은 0.4.0-dev입니다.",
+    "애니메이션의 관절·무기 길이 검사와 화면의 자연스러움은 다릅니다. 손·무기 관통, 접지와 실제 접촉을 영상으로 확인합니다.",
     "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.",
     "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.",
     "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."
@@ -477,7 +563,7 @@ window.MONITOR_DATA = {
     {
       "label": "마일스톤 상태",
       "source": "milestones.json의 선택된 필드",
-      "scope": "M03·M03.1 상태와 수치만 자동 추출; 다음 기능은 명시적으로 분류"
+      "scope": "M03·M03.1 기록, M05·M05.1의 로컬 영상·실제 캡처·비공개 업로드 근거 확인"
     },
     {
       "label": "기능 범위",
@@ -486,8 +572,13 @@ window.MONITOR_DATA = {
     },
     {
       "label": "물리 알고리즘",
-      "source": "BATTLE_PHYSICS.md + 모듈 검사 결과",
-      "scope": "설계, 첫 모듈 검사, 미구현·성능 한계 구분"
+      "source": "BATTLE_PHYSICS.md + 보존된 M05 측정과 새 기능 검사",
+      "scope": "첫 모듈 시간과 새 병렬 회귀 시간·통합 FPS를 구별"
+    },
+    {
+      "label": "장수와 애니메이션",
+      "source": "OFFICER_ROSTER.md / HERO_ANIMATION.md / SOLDIER_ANIMATION.md",
+      "scope": "명부·원화·모델·플레이 가능 수와 관절 동작·품질 차이를 구별"
     },
     {
       "label": "엔진·모드 경로",

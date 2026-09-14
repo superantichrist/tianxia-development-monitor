@@ -117,6 +117,8 @@
 
   function initialize() {
     setText("#hero-version", `v${data.project.latestVerified}`);
+    setText("#current-milestone", data.project.currentMilestone);
+    setText("#current-milestone-title", data.project.currentMilestoneTitle || "개별 전투·3D 캠페인·일기토");
     setText("#count-active", data.cards.filter((item) => item.status === "in_progress").length);
     setText("#count-complete", data.cards.filter((item) => item.status === "complete").length);
     const date = new Date(data.updatedAt);

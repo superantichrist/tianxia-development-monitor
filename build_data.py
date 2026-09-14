@@ -39,7 +39,7 @@ def card(key, title, domain, status, milestone, summary, evidence, next_step, pr
                 summary=summary, evidence=evidence, next=next_step, priority=priority)
 
 
-def m05_completion_evidence(milestone: dict) -> dict:
+def _completion_evidence(milestone: dict, milestone_id: str) -> dict:
     """Require the reviewed local movie and private-upload record before completion.
 
     Only booleans leave this function. Paths, account data and private video IDs
@@ -69,18 +69,19 @@ def m05_completion_evidence(milestone: dict) -> dict:
         raise ValueError("M05 completed video bytes differ from the reviewed SHA-256")
     if (video.get("width"), video.get("height"), video.get("fps")) != (1920, 1080, 30):
         raise ValueError("M05 completion requires reviewed 1080p30 media")
-    if not number(video.get("seconds")) or not 60 <= video["seconds"] <= 90:
-        raise ValueError("M05 completion requires the validated 60–90 second movie")
+    max_seconds = 135 if milestone_id == "M05.1" else 90
+    if not number(video.get("seconds")) or not 60 <= video["seconds"] <= max_seconds:
+        raise ValueError(f"{milestone_id} completion requires the validated 60–{max_seconds} second movie")
     if not isinstance(video.get("visual_qa_seconds"), list) or len(video["visual_qa_seconds"]) < 3:
         raise ValueError("M05 completion requires campaign, battle and duel visual review timestamps")
     if any(number(value) is None or not 0 <= value < video["seconds"] for value in video["visual_qa_seconds"]):
         raise ValueError("M05 visual review timestamps must lie inside the reviewed movie")
-    capture_name = video.get("capture_report", "artifacts/M05-capture.json")
+    capture_name = video.get("capture_report", f"artifacts/{milestone_id}-capture.json")
     capture_path = (ROOT / str(capture_name)).resolve()
     if not within(capture_path, (ROOT / "artifacts").resolve()) or not capture_path.is_file():
         raise ValueError("M05 completion requires its local gameplay capture report")
     capture = json.loads(capture_path.read_text(encoding="utf-8-sig"))
-    if (capture.get("milestone") != "M05" or capture.get("failures") != []
+    if (capture.get("milestone") != milestone_id or capture.get("failures") != []
             or capture.get("performance_benchmark") is not False):
         raise ValueError("M05 gameplay capture evidence is incomplete or failed")
     screens = {chapter.get("screen") for chapter in capture.get("chapters", [])}
@@ -89,14 +90,98 @@ def m05_completion_evidence(milestone: dict) -> dict:
     campaign, battle, duel = (capture.get(key, {}) for key in ("campaign", "battle", "duel"))
     if (campaign.get("travel_distance", 0) <= 1 or battle.get("observed_hit_intents", 0) <= 0
             or sum(battle.get("casualties", [])) <= 0 or duel.get("combatants") != 2
-            or not duel.get("exchanges") or len(duel.get("selected_models", [])) != 4
+            or len(duel.get("selected_models", [])) != 4
             or not all(model.get("authored") is True for model in duel["selected_models"])):
         raise ValueError("M05 completion requires recorded army movement, individual combat and four authored duel heroes")
+    if milestone_id == "M05":
+        if not duel.get("exchanges"):
+            raise ValueError("M05 completion requires recorded duel exchanges")
+    else:
+        _validate_m051_capture(capture, video, milestone["version"])
     if (youtube.get("status") != "complete" or youtube.get("privacy") != "private"
             or not youtube.get("verified_date") or not youtube.get("verification")
             or not re.fullmatch(r"[A-Za-z0-9_-]{11}", str(youtube.get("video_id", "")))):
         raise ValueError("M05 completion requires a verified private YouTube upload record")
     return {key: True for key in proof}
+
+
+def m05_completion_evidence(milestone: dict) -> dict:
+    # Preserve the original M05 contract and its recorded telemetry limitation.
+    return _completion_evidence(milestone, "M05")
+
+
+def m051_completion_evidence(milestone: dict) -> dict:
+    return _completion_evidence(milestone, "M05.1")
+
+
+def _validate_m051_capture(capture: dict, video: dict, version: str) -> None:
+    """Verify the stronger animation movie contract; return no private fields.
+
+    This validates recorded coverage and review attestations, not aesthetic
+    naturalness, exact weapon collision, media decoding or YouTube itself.
+    """
+    heroes = {"lubu", "guanyu", "zhangfei", "machao"}
+    if (capture.get("version") != version or capture.get("capture_fps") != 30
+            or capture.get("fixed_timestep") is not True or capture.get("automated_commands") is not True
+            or video.get("fixed_timestep") is not True or video.get("automated_commands") is not True
+            or video.get("performance_benchmark") is not False):
+        raise ValueError("M05.1 version, fixed-timestep and automated-command disclosures must match")
+    reviews = video["visual_qa_seconds"]
+    if len(set(reviews)) < 6:
+        raise ValueError("M05.1 requires separate visual review of campaign, battle and each of four attacking heroes")
+    chapters = capture.get("chapters", [])
+    for screen in ("campaign", "battle"):
+        intervals = [(chapter.get("seconds"), chapters[i+1].get("seconds") if i+1 < len(chapters) else video["seconds"])
+                     for i, chapter in enumerate(chapters) if chapter.get("screen") == screen]
+        if not any(number(start) is not None and number(end) is not None and any(start <= moment < end for moment in reviews)
+                   for start, end in intervals):
+            raise ValueError("M05.1 visual review must include " + screen)
+    source_hashes = capture.get("source_animation_sha256", {})
+    if not isinstance(source_hashes, dict) or len(source_hashes) < 7 or not all(re.fullmatch(r"[0-9a-fA-F]{64}", str(value)) for value in source_hashes.values()):
+        raise ValueError("M05.1 requires recorded animation source hashes")
+    battle = capture["battle"]
+    samples = battle.get("contact_samples", [])
+    if not isinstance(samples, list) or not samples or battle.get("conservation") != [True, True]:
+        raise ValueError("M05.1 requires contact samples and conserved soldier counts")
+    def vector(value, length):
+        return isinstance(value, list) and len(value) == length and all(number(v) is not None for v in value)
+    pair_found = False
+    for sample in samples:
+        agents = sample.get("agents", [])
+        if sample.get("contact_agents", 0) <= 0 or len(agents) != 2:
+            continue
+        if agents[0].get("id") == agents[1].get("id") or not all(agent.get("alive") == 1 for agent in agents):
+            continue
+        if not all(vector(agent.get("position"), 2) and vector(agent.get("velocity"), 2)
+                   and all(number(agent.get(key)) is not None for key in ("facing", "attack_phase", "readiness", "movement_phase", "health"))
+                   and agent.get("kind") for agent in agents):
+            continue
+        if any(agent.get("target_id") == agents[1-i].get("id") for i, agent in enumerate(agents)):
+            pair_found = True
+            break
+    if not pair_found:
+        raise ValueError("M05.1 requires a live sampled target pair with animation state")
+    duel = capture["duel"]
+    if {model.get("hero") for model in duel["selected_models"]} != heroes:
+        raise ValueError("M05.1 requires four distinct authored heroes")
+    bouts = duel.get("bouts", [])
+    if len(bouts) != 4 or {bout.get("hero") for bout in bouts} != heroes:
+        raise ValueError("M05.1 requires an actual bout for each of the four heroes")
+    for bout in bouts:
+        # tests/m051_capture.gd places the named hero on side 0 in every bout.
+        if not any(exchange.get("source") == 0 and exchange.get("target") == 1
+                   and number(exchange.get("damage")) is not None and exchange["damage"] > 0
+                   for exchange in bout.get("exchanges", [])):
+            raise ValueError("M05.1 lacks a damaging attack from " + bout["hero"])
+        poses = [pose for pose in bout.get("samples", []) if pose.get("attacking_side") == 0]
+        if not {"windup", "impact"}.issubset({pose.get("phase") for pose in poses}):
+            raise ValueError("M05.1 lacks windup and contact poses for " + bout["hero"])
+        for key in ("torso", "right_leg", "left_leg", "weapon_up"):
+            if not poses or not all(vector(pose.get(key), 3) for pose in poses) or len({tuple(pose[key]) for pose in poses}) < 2:
+                raise ValueError("M05.1 lacks changing full-body pose evidence: " + bout["hero"] + "/" + key)
+        frames = [pose.get("frame") for pose in poses]
+        if not all(number(frame) is not None for frame in frames) or not any(min(frames)/30 <= moment <= max(frames)/30 for moment in reviews):
+            raise ValueError("M05.1 requires visual review inside the attacking bout of " + bout["hero"])
 
 
 def build() -> dict:
@@ -107,21 +192,32 @@ def build() -> dict:
     m03 = milestones.get("M03", {})
     m031 = milestones.get("M03.1", {})
     m05 = milestones.get("M05", {})
+    m051 = milestones.get("M05.1", {})
     m05_proof = m05_completion_evidence(m05)
+    m051_proof = m051_completion_evidence(m051)
     m05_complete = all(m05_proof.values())
+    m051_complete = all(m051_proof.values())
     m05_state = "complete" if m05_complete else "in_progress"
+    m051_state = "complete" if m051_complete else "in_progress"
     movie_progress = "통합 보고 영상과 비공개 업로드를 검증했습니다." if m05_complete else "통합 보고 영상과 비공개 업로드는 검증 대기 중입니다."
     complete03 = "complete" if m03.get("status") == "complete" else "in_progress"
     complete031 = "complete" if m031.get("status") == "complete" else "in_progress"
-    latest_verified = m05["version"] if m05_complete else "0.3.1" if complete031 == "complete" else "0.3.0"
+    latest_verified = m051["version"] if m051_complete else m05["version"] if m05_complete else "0.3.1" if complete031 == "complete" else "0.3.0"
     physics = read_json("artifacts/soldier-dynamics-tests.json")
-    raw_bench = physics.get("benchmark", {})
+    # Functional regressions can run under mixed load. Do not silently replace
+    # the reviewed M05 module timing with today's concurrent test execution.
+    physics_archive = read_json("artifacts/milestones/M05/evidence/soldier-dynamics-tests.json")
+    if not physics_archive or physics_archive.get("failures"):
+        raise ValueError("Preserved M05 module timing evidence is missing or failed")
+    raw_bench = physics_archive.get("benchmark", {})
     physics_metrics = {k: number(raw_bench.get(k)) for k in (
         "agents", "contact_median_ms", "contact_p99_ms", "idle_median_ms",
         "maximum_active_agents", "maximum_pair_checks", "measured_steps", "dt")}
     physics_metrics.update({"checks": number(physics.get("passed")),
-                            "contact_hits": number(physics.get("contact_hits")),
-                            "contact_deaths": number(physics.get("contact_deaths"))})
+                            "contact_hits": number(physics_archive.get("contact_hits")),
+                            "contact_deaths": number(physics_archive.get("contact_deaths")),
+                            "timingMilestone": "M05", "timingPreserved": True,
+                            "timingScope": "보존된 M05 모듈 측정. 새 병렬 회귀 실행의 시간과 구별하며 통합 FPS로 주장하지 않습니다."})
     individual_render = read_json("artifacts/individual-render-headless-tests.json")
     gpu_render = read_json("artifacts/individual-render-gpu-tests.json")
     pose = read_json("artifacts/hero-pose-tests.json")
@@ -141,6 +237,26 @@ def build() -> dict:
     portable_checks = sum(int(result["passed"]) for result in portable)
     ui_checks = int(ui["passed"])
     duel_checks = sum(int(result["passed"]) for result in duel_sources)
+    hero_animation = read_json("artifacts/hero-animation-tests.json")
+    soldier_animation = read_json("artifacts/soldier-animation-tests.json")
+    for result in (hero_animation, soldier_animation):
+        if not result or result.get("failures") or not number(result.get("passed")):
+            raise ValueError("M05.1 animation functional evidence is missing or failed")
+    hero_animation_checks = int(hero_animation["passed"])
+    soldier_animation_checks = int(soldier_animation["passed"])
+    soldier_pose_samples = int(soldier_animation["pose_samples"])
+    roster = read_json("assets/data/officers.json")
+    officers = roster.get("officers", [])
+    if not officers or len({row.get("id") for row in officers}) != len(officers):
+        raise ValueError("Officer catalog requires distinct reference IDs")
+    roster_metrics = {"referenceEntries": len(officers), "illustrations": sum(bool(row.get("portrait")) for row in officers),
+                      "models": sum(row.get("model_status") != "not_created" for row in officers),
+                      "duelPlayable": sum(row.get("duel_playable") is True for row in officers),
+                      "koreanNames": sum(bool(row.get("name_ko")) for row in officers)}
+    if (roster.get("count") != roster_metrics["referenceEntries"] or roster.get("illustrated") != roster_metrics["illustrations"]
+            or roster.get("duel_playable") != roster_metrics["duelPlayable"] or roster.get("name_ko_count") != roster_metrics["koreanNames"]):
+        raise ValueError("Officer catalog count mismatch")
+    roster_count, portrait_count, model_count, duel_count = (roster_metrics[key] for key in ("referenceEntries", "illustrations", "models", "duelPlayable"))
     original = read_json("tools/modding/evidence/2026-09-10-runtime/summary.json")
     original_metrics = {key: number(original.get("csv_metrics", {}).get(key)) for key in (
         "frame_count", "total_frame_time_seconds", "average_fps", "mean_frame_time_ms", "p99_frame_time_ms")}
@@ -154,11 +270,11 @@ def build() -> dict:
     bench = m031.get("benchmark_near", {})
     wide = m031.get("benchmark_wide", {})
     cards = [
-        card("individual", "병사마다 움직이는 전투", "battle", "in_progress", "M05", "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결했습니다.", f"모듈 {physics_checks}개·전투 통합 15개 검사. 렌더 연결 headless {render_checks}개와 실제 GPU {gpu_checks}개 검사를 통과했습니다. 개별 사망 후 ID 재배치·보간·LOD·그림자·행동 데이터를 GPU에서 읽어 확인했습니다.", "전체 캠페인·전투·일기토 마일스톤 영상 검증과 대규모 플레이 품질 개선", "focus"),
+        card("individual", "개별 병사 전투 첫 통합", "battle", m05_state, "M05", "영속 ID·실제 위치·속도·개인 HP와 생존 목록을 전투에 연결했습니다.", f"모듈 {physics_checks}개·전투 통합 15개 검사. 렌더 연결 headless {render_checks}개와 실제 GPU {gpu_checks}개 검사를 통과했습니다. 개별 사망 후 ID 재배치·보간·LOD·그림자·행동 데이터를 GPU에서 읽어 확인했습니다. {movie_progress}", "개별 동작·전선 접촉과 대규모 플레이 품질 개선", "focus"),
         card("contact", "전선 접촉과 개별 타격", "battle", "in_progress", "M05", "접근 → 공격 준비 → 타격 → 회복. 공간 격자로 개인 접촉을 계산합니다.", "첫 분리 모델은 제한된 후보와 위치 보정을 사용합니다. 완전한 비관통 물리가 아닙니다.", "전선 후보 축소, 아군 교차, 표적 점유와 좁은 통로 검증", "focus"),
-        card("terrain", "연속된 3D 캠페인 지형", "campaign", "in_progress", "M05", "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.", f"캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 {ui_checks}개 검사도 통과했습니다. {movie_progress}", "캠페인 조작·지형·군대 이동의 그래픽과 플레이 품질 확장", "focus"),
-        card("campaign_armies", "지도 위 3D 군대와 장수", "campaign", "in_progress", "M05", "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결합니다.", "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. 완료 영상은 별도입니다.", "군대 선택·경로 이동·턴 전환의 통합 플레이 확인", "focus"),
-        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", "in_progress", "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"일기토 합계 {duel_checks}개 headless 검사, 프로젝트 밖의 휴대용 실행 {portable_checks}개 검사 통과. 최신 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. {movie_progress}", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
+        card("terrain", "연속된 3D 캠페인 지형", "campaign", m05_state, "M05", "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.", f"캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 {ui_checks}개 검사도 통과했습니다. {movie_progress}", "캠페인 조작·지형·군대 이동의 그래픽과 플레이 품질 확장", "focus"),
+        card("campaign_armies", "지도 위 3D 군대와 장수", "campaign", m05_state, "M05", "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결했습니다.", "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. " + movie_progress, "군대 행군 동작·지형 상호작용과 전략 지도 콘텐츠 확장", "focus"),
+        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", m05_state, "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"일기토 합계 {duel_checks}개 headless 검사, 프로젝트 밖의 휴대용 실행 {portable_checks}개 검사 통과. 네 모델·양손 IK·음원을 포함한 빌드와 실제 GPU의 HP 변화·항복 결과를 확인했습니다. {movie_progress}", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
         card("hero_models", "여포·관우·장비·마초 모델", "graphics", "in_progress", "M05", "얼굴·수염·체형·갑옷·전용 무기를 구분한 네 명의 근접용 하마 모델과 강체 관절 기반 양손 IK를 제작했습니다.", f"실사화 r2 모델을 실제 GPU에서 확인했습니다. 포즈 {pose_checks}개 검사 / {pose_samples:,}개 표본에서 팔 길이·관절 원점·양손과 무기 연결을 확인했습니다. 전신 스키닝과 실제 무기 충돌 판정은 별도 과제입니다.", "전용 무기 동작·접촉 연출과 얼굴·의복 품질 확장", "focus"),
         card("models", "인물·기병·말 모델 개선", "graphics", complete03, "M03", "인체 기반 얼굴, 피부 색상·노멀 재질과 병사·기병·말 8종을 개선했습니다.", "모델·재질 검사, 확대 GPU 화면, 실행 빌드와 마일스톤 영상 확인.", "골격 리깅, 보행·공격·피격 동작과 재질 품질 확장"),
         card("lod", "근접 공간 분할과 그림자 LOD", "performance", complete031, "M03.1", "가까운 공간 구역만 상세 모델로 표현해 근접 렌더 비용을 줄였습니다.", "GPU 354검사, 병사 수 보존, 동일 조건 근접·원거리 측정.", "새 개별 전투 통합 후 같은 조건에서 다시 측정"),
@@ -166,11 +282,15 @@ def build() -> dict:
         card("controls", "전투 명령과 전술 기본", "battle", "complete", "기반", "배치·드래그 선택·집단 명령·진형·사기·패주·병종 상성을 구현했습니다.", "기존 부대 단위 전투 경로의 기능. 개별 병사 물리 완료를 뜻하지 않습니다.", "개인 접촉 모델과 전술 규칙의 일치 확인"),
         card("mod_tools", "모드 제작 도구와 정적 진단", "modding", "complete", "M04 · 도구", "공식 RPFM·스키마·의존성 캐시와 읽기 전용 진단 경로를 구성했습니다.", "설치 팩별 분리 진단과 복구 가능한 튜닝 후보를 준비했습니다.", "실제 원작 캠페인·전투에서 조합과 호환성 검증"),
         card("mod_runtime", "원작 모드·튜닝 플레이 비교", "modding", "in_progress", "M04", "기존 모드 구성의 내장 전투와 새 유비 캠페인에서 군대 이동·초기 전투·결정적 승리·캠페인 복귀를 실제 확인했습니다.", f"9월 9일 내장 전투 CSV {original_metrics['frame_count']:,}프레임 / {original_metrics['total_frame_time_seconds']:.3f}초, 전체 행 평균 {original_metrics['average_fps']:.3f} FPS. 9월 10일 1,263 대 721명 초기 전투와 장비 일기토 시작 확인. 일기토 개별 결과는 미확인이며 이 원작 FPS를 Godot와 비교하지 않습니다.", "실제 저장·재실행·리플레이 재생·근접 일기토·같은 조건의 품질 후보·패치 효과 확인"),
-        card("animation", "병사·말 골격 애니메이션", "graphics", "planned", "후속", "리깅과 보행·공격·피격·사망 상태를 개인 전투 위상에 연결합니다.", "현재 GPU 변형 동작과 구분되는 제작 과제.", "보병·말 각 1종의 골격 동작을 먼저 전투에 연결", "focus"),
+        card("soldier_animation", "상대를 향한 병사 무기와 관절 동작", "graphics", m051_state, "M05.1", "창을 교전 상대 앞으로 낮추고 칼·방패·활·쇠뇌의 서로 다른 동작을 실제 개인 공격·이동 위상에 연결했습니다.", f"Blender v4 자산 7종 × 3 LOD. {soldier_animation_checks}개 검사 / {soldier_pose_samples:,}개 자세에서 무기 길이·팔 관절·방향을 확인했습니다. GPU {gpu_checks}개 렌더 검사와 근접 화면 검수를 수행했습니다. 고정 프레임 검수는 실시간 FPS가 아닙니다.", "무기 궤적 충돌·지형 발 접지·기병과 말 동작 품질 확장", "focus"),
+        card("hero_animation", "장수마다 다른 전신 공격", "graphics", m051_state, "M05.1", "Blender의 28개 컨트롤 Action을 일기토에 연결해 여포 횡베기·관우 중량 베기·장비와 마초의 찌르기에 몸통 회전과 앞발 이동을 넣었습니다.", f"장수 동작 {hero_animation_checks}개 검사, 장수마다 569프레임의 베이크와 실제 GPU 준비·타격·피격·받아치기 검수. {('통합 영상과 비공개 업로드를 확인했습니다.' if m051_complete else 'M05.1 통합 영상과 비공개 업로드는 아직 검증 중입니다.')}", "서로 맞물리는 무기 접촉·타격 후 빼기·다방향 연속기·전신 스키닝", "focus"),
+        card("animation", "병사·말 스키닝과 지면 접지", "graphics", "planned", "후속", "현재 강체 관절과 GPU 해석 동작을 넘어 가중치 스키닝·지형 발 IK·말 골격과 발굽 접지를 확장합니다.", "M05.1의 관절 동작이 자연스러운 전신 스키닝과 접지까지 완성했다는 뜻은 아닙니다.", "발 미끄러짐과 관절 경계가 보이는 근접 장면부터 개선", "focus"),
+        card("officer_roster", "가능한 많은 유니크 장수 명부", "campaign", "in_progress", "콘텐츠 확장", f"삼국지 14 공식 이름 목록 {roster_count:,}개 ID를 등록했습니다. 다른 작품의 추가 인물도 신원·출처를 확인해 확장하며 인원 상한을 두지 않습니다.", f"한글 이름 {roster_metrics['koreanNames']}명. 동명이인은 ID를 분리했습니다. 원화 {portrait_count}명·3D 모델 {model_count}명·독립 일기토 {duel_count}명이며, {roster_count:,}명이 플레이 가능하다는 뜻은 아닙니다.", "남은 한글 이름·연의와 정사 출전·중복 신원 검토 후 장수 데이터와 플레이 통합", "focus"),
+        card("officer_portraits", "연의 특징을 살린 독자 장수 원화", "graphics", "in_progress", "콘텐츠 확장", f"여포·관우·장비·마초·조운·황충·전위·조조·유비·손권·제갈량·주유, 첫 {portrait_count}명의 그림을 개별 생성했습니다.", f"12개 서로 다른 1,024×1,536 PNG를 직접 검토하고 원본·게임 리소스·갤러리 사본의 SHA-256 일치를 확인했습니다. 공개 장수 명부에서 그림과 제작 상태를 볼 수 있습니다.", "다음 장수 묶음의 얼굴·복식·무기·연령을 개별 설계하고 추가 제작", "focus"),
         card("cavalry", "기병 충격과 창병 저지", "battle", "planned", "후속", "질량·속도·방향·대형을 고려한 접촉 충격과 저지 반응을 만듭니다.", "물리 설계 문서에 제안. 연속 충돌·넘어짐은 미구현 범위.", "기병 돌파와 창병 방어의 반복 가능한 충돌 장면"),
         card("siege", "공성 통로와 성벽 위 교전", "battle", "planned", "후속", "문·벽·사다리의 통로 용량과 높이 층을 전투 경로에 반영합니다.", "현재 성문·내구도·투석 규칙은 기본 구현. 성벽 위 이동은 확장 대상.", "좁은 문 통과, 열린 문·파괴된 벽 경로 변경 검사"),
         card("diplomacy", "장수·정치·외교 확장", "campaign", "planned", "M07", "인물 관계·장비·조정·복합 협상·수행 부대 구조를 확장합니다.", "기본 장수·외교·개혁은 존재하며 원작 전체 구조는 아직 없습니다.", "관계·직위·협상 기능의 플레이 시나리오 설계"),
-        card("native", "시뮬레이션 병목 개선", "performance", "in_progress", "M05 병행", "C++ 접촉 계산을 연결하고 기능·그래픽 작업과 병행해 비용을 줄였습니다.", f"{physics_checks}개 검사 통과. 25,664명 상태의 모듈 접촉 중앙값 {physics_metrics['contact_median_ms']:.3f}ms / p99 {physics_metrics['contact_p99_ms']:.3f}ms. 통합 전투 FPS와 다른 CPU 스텝 측정입니다.", "같은 알고리즘·병력·장면의 통합 렌더 비용과 기능 결과 비교"),
+        card("native", "시뮬레이션 병목 개선", "performance", "in_progress", "병행", "C++ 접촉 계산을 연결하고 기능·그래픽 작업과 병행해 비용을 줄였습니다.", f"{physics_checks}개 기능 검사 통과. 보존된 M05의 25,664명 상태 모듈 접촉 중앙값 {physics_metrics['contact_median_ms']:.3f}ms / p99 {physics_metrics['contact_p99_ms']:.3f}ms. 새 병렬 회귀 실행이나 통합 전투 FPS와 다른 측정입니다.", "같은 알고리즘·병력·장면의 통합 렌더 비용과 기능 결과 비교"),
         card("engine", "엔진·도구·모드 선택 재검토", "tooling", "in_progress", "매 단계", "Godot 개선, 다른 엔진, 전용 모듈, 원작 모드 경로를 단계마다 비교합니다.", "현재 경로는 Godot와 Blender. 다른 엔진의 우위를 아직 측정하지 않았습니다.", "기능·그래픽 효과, 제작 비용, 호환성과 성능을 함께 판단"),
         card("replay", "재현 가능한 전투·리플레이", "battle", "planned", "후속", "고정 틱·명령 기록·개별 상태 저장으로 같은 전투를 재현합니다.", "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.", "상태 해시와 저장·복원 후 결과 일치 확인"),
     ]
@@ -181,9 +301,10 @@ def build() -> dict:
         {"area":"개별 병사 전투", "domain":"battle", "current":"개인 위치·속도·HP·접촉·공격 모듈과 통합 작업", "gap":"전선 점유·아군 비관통·정교한 무기 접촉·규모 성능", "next":"실제 전투 연결과 수치·영상 검증", "level":"개발 중"},
         {"area":"전술·AI", "domain":"battle", "current":"진형·상성·측후방·돌격·사기·패주, 기본 AI", "gap":"장기 작전·협공·포위·증원·세밀한 시야와 은폐", "next":"개인 접촉과 전술 규칙 결합", "level":"기반 구현"},
         {"area":"공성·물리", "domain":"battle", "current":"성문·성벽 내구도·투석·화공·중앙 진입 경로", "gap":"성벽 위 전투·사다리·공성탑·복합 도시 길 찾기", "next":"장애물과 통로 용량 모델", "level":"기반 구현"},
-        {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·조명·환경", "gap":"AAA 수준 스캔·의상 세트·모션 캡처·골격 동작", "next":"리깅·개인 동작·지형 그래픽 확장", "level":"개선 진행"},
+        {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·교전 무기 방향·해석적 팔과 발 동작", "gap":"AAA 수준 스캔·의상 세트·전신 스키닝·지형 접지·말 골격", "next":"리깅·무기 접촉·발 미끄러짐·지형 그래픽 확장", "level":"개선 진행"},
         {"area":"사운드·제품 완성도", "domain":"graphics", "current":"합성 배경음·북소리, 한국어 UI, 캠페인 저장", "gap":"장수 음성·전체 효과음·멀티플레이·튜토리얼·접근성", "next":"핵심 기능 검증 후 범위별 확장", "level":"기반 구현"},
-        {"area":"장군 일기토", "domain":"battle", "current":"독립 모드·4장수 모델·강체 관절 양손 IK·2인 교전·받아치기·실제 HP와 결과", "gap":"전신 스키닝·동작 세트·정교한 무기 충돌과 접촉 연출", "next":"통합 보고 영상·전용 무기 동작과 얼굴·의복 품질 확장", "level":"개발 중"},
+        {"area":"장군 일기토", "domain":"battle", "current":"독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과", "gap":"자기 몸 관통·무기 접촉의 정교함·발 접지·다방향 연속기·전신 스키닝", "next":"몸과 손·무기 간격 수정, 실제 접촉과 회복 연출의 영상 재검수", "level":"M05 기반 완료 · M05.1 개선 중"},
+        {"area":"유니크 장수·원화", "domain":"graphics", "current":f"공식 참고 명부 {roster_count:,}개 ID · 독자 원화 {portrait_count}명 · 3D 모델 {model_count}명 · 독립 일기토 {duel_count}명", "gap":"명부 전체 플레이 통합·추가 일러스트·한글 이름·연의와 정사 구분·다른 작품 추가 인물", "next":"인물별 출처·특징을 확인하며 원화와 장수 콘텐츠 확대", "level":"첫 제작 묶음"},
         {"area":"원작 모드·튜닝", "domain":"modding", "current":"공식 도구·내장 전투 CSV·신규 캠페인 초기 전투 승리와 지도 복귀·장비 일기토 시작", "gap":"실제 저장·재실행·리플레이 재생·근접 동작과 모드 호환성·패치 효과", "next":"같은 조건의 반복·품질 후보 비교", "level":"실행 검증 진행"},
     ]
     public_milestones = []
@@ -192,19 +313,20 @@ def build() -> dict:
         ("M03.1", "근접 렌더링 개선", complete031, "25,664명 표현 유지, 공간 분할·그림자 LOD"),
         ("M04", "원작 모드·튜닝 비교", "in_progress", "내장 전투 CSV, 신규 유비 캠페인 초기 전투 승리·장비 일기토 시작·지도 복귀 확인 · 저장·품질·호환성 비교 진행"),
         ("M05", "개별 전투·3D 캠페인·4장수 일기토", m05_state, "개인 이동·접촉, 연속 지형·3D 군대, 여포·관우·장비·마초와 별도 일기토 모드"),
-        ("후속", "애니메이션·공성·정치", "planned", "리깅·기병 충격·성벽 경로·장수·외교 확장"),
+        ("M05.1", "병사 무기 자세·장수 전신 동작", m051_state, "교전 무기 방향·7종 병사 관절 동작·Blender 장수별 공격과 앞발 이동 · 몸 관통과 접촉 품질 재검수"),
+        ("후속", "접촉·공성·장수 콘텐츠·정치", "planned", "스키닝·기병 충격·성벽 경로·장수 원화와 플레이 통합·외교 확장"),
     ]:
         raw = milestones.get(key, {})
         checks = raw.get("checks", {})
         public_milestones.append(dict(id=key, title=title, status=state, description=description,
             checks={name:number(checks.get(name)) for name in ("assets", "rules", "ui", "render_lod_gpu") if number(checks.get(name)) is not None},
-            videoVerified=m05_complete if key == "M05" else raw.get("youtube", {}).get("privacy") == "private" and raw.get("status") == "complete" if isinstance(raw.get("youtube"), dict) else False))
+            videoVerified=m051_complete if key == "M05.1" else m05_complete if key == "M05" else raw.get("youtube", {}).get("privacy") == "private" and raw.get("status") == "complete" if isinstance(raw.get("youtube"), dict) else False))
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     return {
         "schemaVersion":1,
         "updatedAt":now,
         "project": {"name":"천하", "englishName":"TIANXIA", "edition":"개발 관측소", "latestVerified":latest_verified,
-                    "currentMilestone":"M05", "goal":"캠페인부터 전장까지, 삼국지 토탈워와 동등한 수준을 최대한 추구합니다.",
+                    "currentMilestone":"M05.1", "currentVersion":m051.get("version", "0.4.1-dev"), "currentMilestoneTitle":"병사 무기 자세·장수 전신 동작", "goal":"캠페인부터 전장까지, 삼국지 토탈워와 동등한 수준을 최대한 추구합니다.",
                     "policy":"기능·그래픽 확장을 우선하고, 최적화를 병행합니다.",
                     "boundary":"현재는 독립 개발 중인 전략 게임입니다. 항목별 구현과 검증을 기록하며 전체 동등성이나 완성률을 주장하지 않습니다."},
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
@@ -213,10 +335,12 @@ def build() -> dict:
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
         "originalGameRuntime":original_public,
-        "integrationChecks":{"individualRenderHeadless":render_checks,"individualRenderGpu":gpu_checks,"individualRenderGpuVerified":gpu_verified,"duelHeadless":duel_checks,"portableHeadless":portable_checks,"heroPoseChecks":pose_checks,"heroPoseSamples":pose_samples,"uiGpu":ui_checks,"rigidJointTwoHandIkImplemented":True,"currentMilestoneVideoVerified":m05_complete},
-        "milestoneCompletion":{"M05":m05_proof},
-        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", f"M05는 모듈·headless 검사와 통합 GPU·규모 성능·플레이 영상 검증을 구분합니다. 최신 검증 완료 버전은 {latest_verified}입니다.", "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.", "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."],
-        "sources":[{"label":"마일스톤 상태", "source":"milestones.json의 선택된 필드", "scope":"M03·M03.1 상태와 수치만 자동 추출; 다음 기능은 명시적으로 분류"}, {"label":"기능 범위", "source":"FEATURES.md의 수동 검토 요약", "scope":"현재 기능과 생략·단순화된 범위를 분리"}, {"label":"물리 알고리즘", "source":"BATTLE_PHYSICS.md + 모듈 검사 결과", "scope":"설계, 첫 모듈 검사, 미구현·성능 한계 구분"}, {"label":"엔진·모드 경로", "source":"ENGINE_DECISIONS.md / ORIGINAL_GAME.md 요약", "scope":"도구 준비와 실제 원작 검증을 분리"}],
+        "integrationChecks":{"individualRenderHeadless":render_checks,"individualRenderGpu":gpu_checks,"individualRenderGpuVerified":gpu_verified,"duelHeadless":duel_checks,"portableHeadless":portable_checks,"heroPoseChecks":pose_checks,"heroPoseSamples":pose_samples,"uiGpu":ui_checks,"rigidJointTwoHandIkImplemented":True,"currentMilestoneVideoVerified":m051_complete},
+        "animationChecks":{"soldierChecks":soldier_animation_checks,"soldierPoseSamples":soldier_pose_samples,"heroChecks":hero_animation_checks,"scope":"기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."},
+        "officerCatalog":{**roster_metrics, "page":"officers.html", "scope":"공식 이름 목록의 참고 ID 수이며 현재 플레이 가능한 장수 수나 전 시리즈 최대 수가 아닙니다."},
+        "milestoneCompletion":{"M05":m05_proof, "M05.1":m051_proof},
+        "evidencePolicy":["완료는 각 카드가 명시한 범위에만 적용합니다. 보드 카드 비율은 원작 대비 완성도가 아닙니다.", f"M05의 보존된 완료 영상과 M05.1의 새 애니메이션 작업을 구분합니다. 최신 검증 완료 버전은 {latest_verified}입니다.", "애니메이션의 관절·무기 길이 검사와 화면의 자연스러움은 다릅니다. 손·무기 관통, 접지와 실제 접촉을 영상으로 확인합니다.", "원작 내장 벤치마크와 독립 개발판은 장면·해상도·병력이 다릅니다. 두 FPS의 우열이나 비율을 비교하지 않습니다.", "원작 모드의 정적 경고 수를 실제 오류 수로 단정하지 않습니다.", "마일스톤 영상은 비공개로 보관합니다. 이 공개 페이지에는 영상 링크나 계정 정보를 싣지 않습니다."],
+        "sources":[{"label":"마일스톤 상태", "source":"milestones.json의 선택된 필드", "scope":"M03·M03.1 기록, M05·M05.1의 로컬 영상·실제 캡처·비공개 업로드 근거 확인"}, {"label":"기능 범위", "source":"FEATURES.md의 수동 검토 요약", "scope":"현재 기능과 생략·단순화된 범위를 분리"}, {"label":"물리 알고리즘", "source":"BATTLE_PHYSICS.md + 보존된 M05 측정과 새 기능 검사", "scope":"첫 모듈 시간과 새 병렬 회귀 시간·통합 FPS를 구별"}, {"label":"장수와 애니메이션", "source":"OFFICER_ROSTER.md / HERO_ANIMATION.md / SOLDIER_ANIMATION.md", "scope":"명부·원화·모델·플레이 가능 수와 관절 동작·품질 차이를 구별"}, {"label":"엔진·모드 경로", "source":"ENGINE_DECISIONS.md / ORIGINAL_GAME.md 요약", "scope":"도구 준비와 실제 원작 검증을 분리"}],
         "snapshotNote":"자동 실시간 상태가 아닌 검토된 공개 스냅샷입니다. 기능 카드 분류는 담당자가 갱신하고 생성기가 허용된 수치만 추출합니다.",
     }
 
@@ -235,11 +359,12 @@ def validate(data: dict) -> None:
     for item in data["cards"]:
         if item["status"] not in states or item["domain"] not in domains:
             raise ValueError("Unknown card status or domain")
-    if any(m["id"] == "M05" and m["status"] == "complete" for m in data["milestones"]):
-        proof = data.get("milestoneCompletion", {}).get("M05", {})
-        if not all(proof.get(key) is True for key in (
-                "localVideoHashVerified", "captureEvidenceVerified", "privateUploadVerified")):
-            raise ValueError("M05 public completion requires all local-media, gameplay and private-upload attestations")
+    for milestone_id in ("M05", "M05.1"):
+        if any(m["id"] == milestone_id and m["status"] == "complete" for m in data["milestones"]):
+            proof = data.get("milestoneCompletion", {}).get(milestone_id, {})
+            if not all(proof.get(key) is True for key in (
+                    "localVideoHashVerified", "captureEvidenceVerified", "privateUploadVerified")):
+                raise ValueError(milestone_id + " public completion requires all local-media, gameplay and private-upload attestations")
 
 
 def main() -> None:
@@ -249,10 +374,11 @@ def main() -> None:
     if args.check:
         data = json.loads((HERE / "monitor-data.json").read_text(encoding="utf-8"))
         validate(data)
-        if any(m["id"] == "M05" and m["status"] == "complete" for m in data["milestones"]) and (ROOT / "docs/milestones.json").is_file():
-            local_m05 = next((m for m in read_json("docs/milestones.json").get("milestones", []) if m.get("id") == "M05"), {})
-            if not all(m05_completion_evidence(local_m05).values()):
-                raise ValueError("Published M05 completion does not match verified local milestone evidence")
+        for milestone_id, verifier in (("M05", m05_completion_evidence), ("M05.1", m051_completion_evidence)):
+            if any(m["id"] == milestone_id and m["status"] == "complete" for m in data["milestones"]) and (ROOT / "docs/milestones.json").is_file():
+                local = next((m for m in read_json("docs/milestones.json").get("milestones", []) if m.get("id") == milestone_id), {})
+                if not all(verifier(local).values()):
+                    raise ValueError("Published " + milestone_id + " completion does not match verified local milestone evidence")
         expected = "window.MONITOR_DATA = " + json.dumps(data, ensure_ascii=False, indent=2) + ";\n"
         if (HERE / "monitor-data.js").read_text(encoding="utf-8") != expected:
             raise ValueError("JSON / JS snapshot mismatch")
