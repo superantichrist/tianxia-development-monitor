@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-09-10T08:57:53.830269+00:00",
+  "generated_utc": "2026-09-28T10:26:29.670237+00:00",
   "count": 1000,
-  "illustrated": 12,
+  "illustrated": 16,
   "duel_playable": 4,
   "name_ko_count": 81,
   "scope": "Official RTK14 name-list baseline. No fixed upper cap; additional verified series entries may be appended. This is a production roster, not 1000 playable characters.",
@@ -10629,7 +10629,7 @@
       "reference_index": 557,
       "name_han": "孫策",
       "name_ko": "손책",
-      "alias": null,
+      "alias": "sunce",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
       "literature_classification": "pending_source_review",
@@ -10638,10 +10638,16 @@
       "campaign_playable": false,
       "duel_playable": false,
       "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/romance_v2/sunce.png",
+        "public_path": "portraits/sunce.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "ac2ad88e4806e7df3a2b813b4592ce2c4c77e1dc0b5038756ca09f3379b5a3a6"
+      },
+      "art_direction": "소패왕의 젊은 기개 · 황갈색·적색 전포 · 창",
+      "production_priority": 13
     },
     {
       "id": "rtk14-ref-0558",
@@ -12212,7 +12218,7 @@
       "reference_index": 640,
       "name_han": "貂蟬",
       "name_ko": "초선",
-      "alias": null,
+      "alias": "diaochan",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
       "literature_classification": "pending_source_review",
@@ -12221,10 +12227,16 @@
       "campaign_playable": false,
       "duel_playable": false,
       "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/romance_v2/diaochan.png",
+        "public_path": "portraits/diaochan.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "f57042eb84f651ae0d90ed3325ebc529edd47860278fea46d73ba15928c33a52"
+      },
+      "art_direction": "연환계의 침착한 결의 · 자주색 비단 · 둥근 부채",
+      "production_priority": 15
     },
     {
       "id": "rtk14-ref-0641",
@@ -12655,7 +12667,7 @@
       "reference_index": 663,
       "name_han": "張遼",
       "name_ko": "장료",
-      "alias": null,
+      "alias": "zhangliao",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
       "literature_classification": "pending_source_review",
@@ -12664,10 +12676,16 @@
       "campaign_playable": false,
       "duel_playable": false,
       "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/romance_v2/zhangliao.png",
+        "public_path": "portraits/zhangliao.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "f36857eb21f064ec5a65e24bccd2f4c19d7b9201a3e5ddf52f6aed9e45358d4a"
+      },
+      "art_direction": "소요진의 노련한 지휘관 · 짧은 수염 · 남색 갑주 · 대도",
+      "production_priority": 14
     },
     {
       "id": "rtk14-ref-0664",
@@ -18854,7 +18872,7 @@
       "reference_index": 988,
       "name_han": "呂蒙",
       "name_ko": "여몽",
-      "alias": null,
+      "alias": "lumeng",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
       "literature_classification": "pending_source_review",
@@ -18863,10 +18881,16 @@
       "campaign_playable": false,
       "duel_playable": false,
       "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/romance_v2/lumeng.png",
+        "public_path": "portraits/lumeng.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "d2623895eaadd8b5f86662e118ca8baee3af9bb9dc7d5929ce0d361ad5921f49"
+      },
+      "art_direction": "백의도강의 책략 · 흰 겉옷 · 죽간 · 검",
+      "production_priority": 16
     },
     {
       "id": "rtk14-ref-0989",

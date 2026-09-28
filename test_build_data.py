@@ -282,12 +282,27 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         pck.parent.mkdir(parents=True)
         pck.write_bytes(b"synthetic reviewed PCK bytes")
         self.pck_hash = hashlib.sha256(pck.read_bytes()).hexdigest()
+        catalog=self.root/"assets/data/officers.json"
+        catalog.parent.mkdir(parents=True)
+        catalog.write_bytes(b"synthetic reviewed 16-portrait catalog")
+        catalog_hash=hashlib.sha256(catalog.read_bytes()).hexdigest()
         for key,value in (("REVIEWED_MODELS",models),("REVIEWED_CURVE_SHA256",curve_hash),
-                          ("REVIEWED_PCK_SHA256",self.pck_hash),("REVIEWED_REPORTS",copy.deepcopy(build_data.REVIEWED_REPORTS))):
+                          ("REVIEWED_PCK_SHA256",self.pck_hash),("REVIEWED_CATALOG_SHA256",catalog_hash),
+                          ("REVIEWED_REPORTS",copy.deepcopy(build_data.REVIEWED_REPORTS))):
             current_patch=patch.object(build_data,key,value)
             current_patch.start();self.addCleanup(current_patch.stop)
         source_hashes = {path: value for path,value in models.values()}
         source_hashes["assets/animations/duel-exchanges.json"] = curve_hash
+        source_hashes["assets/data/officers.json"] = catalog_hash
+        self.art_report={"passed":95,"failures":[],"pck_sha256":self.pck_hash,"catalog_sha256":catalog_hash,
+                         "portrait_count":16,"model_count":4,"playable_count":4,"private_note":"private-art-note",
+                         "portraits":[{"path":"res://assets/portraits/romance_v1/fixture"+str(i)+".png"} for i in range(12)]
+                           +[{"path":"res://assets/portraits/romance_v2/"+hero+".png"} for hero in ("sunce","zhangliao","diaochan","lumeng")],
+                         "excluded_prototype_resources":[{"source":"res://private/pelvis_fixture/"+str(i)} for i in range(20)]}
+        art_name="artifacts/romance-v2-pack-validation-r2.json"
+        art_path=self.write(art_name,self.art_report)
+        art_patch=patch.object(build_data,"REVIEWED_ART_PACKAGE",(art_name,hashlib.sha256(art_path.read_bytes()).hexdigest()))
+        art_patch.start();self.addCleanup(art_patch.stop)
         runtime_sources = {"res://"+key:value for key,value in source_hashes.items()}
         base={"failures":[],"source_hashes":runtime_sources,"after_hashes":runtime_sources}
         gallery={**base,"passed":127,"private_note":"private-gallery-path",
@@ -348,7 +363,9 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         self.assertEqual((public["galleryChecks"], public["referenceFrames"], public["referenceViewerUiChecks"]), (127, 2, 11))
         self.assertEqual((public["groundingChecks"],public["approachChecks"],public["pairedOpponentChecks"]),(43,40,169))
         self.assertEqual((public["pairedArmChecks"],public["genericArmChecks"],public["pairedMatchups"],public["pairedSampleHz"]),(33,22,12,240))
-        for hidden in ("private-account", "private-source-path", "private-comparison-path", "res://", "127.0.0.1"):
+        self.assertEqual((public["artPackageChecks"],public["packedPortraits"]),(95,16))
+        self.assertFalse(public["experimentalPelvisAssetsPackaged"])
+        for hidden in ("private-account", "private-art-note", "private-source-path", "private-comparison-path", "res://", "127.0.0.1"):
             self.assertNotIn(hidden, json.dumps(public))
 
     def test_missing_third_mode_cannot_claim_three_mode_validation(self):
@@ -398,7 +415,7 @@ class DevelopmentEvidenceTests(unittest.TestCase):
             build_data.current_development_evidence()
 
     def test_live_model_curve_or_package_bytes_cannot_diverge_from_pins(self):
-        for name in (build_data.REVIEWED_MODELS["guanyu"][0],"assets/animations/duel-exchanges.json","build/Tianxia/Tianxia.pck"):
+        for name in (build_data.REVIEWED_MODELS["guanyu"][0],"assets/animations/duel-exchanges.json","build/Tianxia/Tianxia.pck","assets/data/officers.json"):
             path=self.root/name;original=path.read_bytes();path.write_bytes(b"unreviewed new bytes")
             with self.subTest(path=name),self.assertRaises(ValueError):build_data.current_development_evidence()
             path.write_bytes(original)
@@ -431,6 +448,27 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         build_data.validate(snapshot)
         public["pairedMatchups"]=16
         with self.assertRaisesRegex(ValueError,"snapshot contract"):build_data.validate(snapshot)
+
+    def test_art_counts_and_exact_new_set_cannot_be_relabelled_even_with_reviewed_report_pin(self):
+        for change in ("portrait_count","playable_count","model_count","missing_new_portrait","missing_exclusion"):
+            report=copy.deepcopy(self.art_report)
+            if change=="portrait_count":report[change]=12
+            elif change in ("playable_count","model_count"):report[change]=16
+            elif change=="missing_new_portrait":report["portraits"][-1]["path"]="res://assets/portraits/romance_v1/other.png"
+            else:report["excluded_prototype_resources"].pop()
+            name=build_data.REVIEWED_ART_PACKAGE[0];path=self.write(name,report)
+            with patch.object(build_data,"REVIEWED_ART_PACKAGE",(name,hashlib.sha256(path.read_bytes()).hexdigest())):
+                with self.subTest(change=change),self.assertRaisesRegex(ValueError,"Packed-art scope"):
+                    build_data.current_development_evidence()
+
+    def test_public_catalog_cannot_turn_new_portraits_into_playable_officers(self):
+        snapshot={"sources":[],"statuses":[],"domains":[],"cards":[],"milestones":[],
+                  "developmentEvidence":build_data.current_development_evidence(),
+                  "officerCatalog":{"referenceEntries":1000,"illustrations":16,"models":4,"duelPlayable":4}}
+        build_data.validate(snapshot)
+        snapshot["officerCatalog"]["duelPlayable"]=16
+        with self.assertRaisesRegex(ValueError,"Public catalog must distinguish"):
+            build_data.validate(snapshot)
 
 
 if __name__ == "__main__":
