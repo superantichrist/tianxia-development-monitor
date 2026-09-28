@@ -268,16 +268,57 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         root_patch = patch.object(build_data, "ROOT", self.root)
         root_patch.start()
         self.addCleanup(root_patch.stop)
-        self.write("artifacts/hero-gallery-tests.json", {
-            "passed": 126, "failures": [], "private_note": "private-gallery-path",
-            "heroes": [{"hero": hero, "authored": True, "model": "res://private/model.glb",
-                        "model_sha256": build_data.REVIEWED_H_MODEL_SHA256 if hero == "lubu" else "c" * 64}
-                       for hero in ("lubu", "guanyu", "zhangfei", "machao")]})
-        self.pck_hash = build_data.REVIEWED_H_PCK_SHA256
+        models = {}
+        for hero, (name, _) in build_data.REVIEWED_MODELS.items():
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes((hero + " synthetic model").encode())
+            models[hero] = (name, hashlib.sha256(path.read_bytes()).hexdigest())
+        curve = self.root / "assets/animations/duel-exchanges.json"
+        curve.parent.mkdir(parents=True)
+        curve.write_bytes(b"synthetic reviewed curve bytes")
+        curve_hash = hashlib.sha256(curve.read_bytes()).hexdigest()
+        pck = self.root / "build/Tianxia/Tianxia.pck"
+        pck.parent.mkdir(parents=True)
+        pck.write_bytes(b"synthetic reviewed PCK bytes")
+        self.pck_hash = hashlib.sha256(pck.read_bytes()).hexdigest()
+        for key,value in (("REVIEWED_MODELS",models),("REVIEWED_CURVE_SHA256",curve_hash),
+                          ("REVIEWED_PCK_SHA256",self.pck_hash),("REVIEWED_REPORTS",copy.deepcopy(build_data.REVIEWED_REPORTS))):
+            current_patch=patch.object(build_data,key,value)
+            current_patch.start();self.addCleanup(current_patch.stop)
+        source_hashes = {path: value for path,value in models.values()}
+        source_hashes["assets/animations/duel-exchanges.json"] = curve_hash
+        runtime_sources = {"res://"+key:value for key,value in source_hashes.items()}
+        base={"failures":[],"source_hashes":runtime_sources,"after_hashes":runtime_sources}
+        gallery={**base,"passed":127,"private_note":"private-gallery-path",
+                 "heroes":[{"hero":hero,"authored":True,"model":"res://"+path,"model_sha256":value}
+                           for hero,(path,value) in models.items()]}
+        self.write_report("gallery",gallery)
+        for key,count in (("grounding",43),("approach",40)):
+            self.write_report(key,{**base,"passed":count})
+        self.pairs=[]
+        hero_ids=list(models)
+        for attacker in range(4):
+            for defender in range(4):
+                if attacker==defender:continue
+                entries=[]
+                for index in (attacker,defender):
+                    hero=hero_ids[index];path,value=models[hero]
+                    before={"model_sha256":value,"private_note":"private-account"}
+                    entries.append({"hero":hero,"model_path":"res://"+path,
+                                    "provenance":{"before_load":before,"after_trace":before}})
+                self.pairs.append({"attacker":attacker,"defender":defender,"models":entries,
+                                   "frames":[{}]*1716,"summary":{outcome:{"head_frames":[],"precontact_torso_frames":[],
+                                     "torso_frames":[184] if outcome=="hit" else []} for outcome in ("hit","blocked","parried","miss")}})
+        self.write_report("opponent",{**base,"passed":169,"fps":240,"total_actor_pair_frames":20592,
+                                      "candidate_curve":"","zero_baseline_control":False,"pairs":self.pairs})
+        for key,count,poses,heroes in (("paired_arms",33,600,hero_ids),("generic_arms",22,2901,hero_ids[1:])):
+            self.write_report(key,{**base,"passed":count,"poses":poses,"full_unique_vertices":True,
+                                   "heroes":[{"hero":hero,"after":{"model_sha256":models[hero][1]}} for hero in heroes]})
         self.build = {"source_unchanged_during_export_and_validation": True,
-                      "packaged_sha256": {"Tianxia.pck": self.pck_hash}, "headless_checks": {}}
+                      "packaged_sha256": {"Tianxia.pck": self.pck_hash}, "headless_checks": {},"source_sha256":source_hashes}
         for mode in ("menu", "duel", "heroes"):
-            checks = {"passed": 64, "version": "fixture-build", "failures": []}
+            checks = {"passed": 76, "version": "fixture-build", "failures": []}
             self.build["headless_checks"][mode] = checks
             self.write("artifacts/portable-validation-" + mode + ".json", {
                 **checks, "launch_mode": mode, "pck_sha256": self.pck_hash,
@@ -296,10 +337,17 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         path.write_text(json.dumps(data), encoding="utf-8")
         return path
 
+    def write_report(self,key,data):
+        name,_,count=build_data.REVIEWED_REPORTS[key]
+        path=self.write(name,data)
+        build_data.REVIEWED_REPORTS[key]=(name,hashlib.sha256(path.read_bytes()).hexdigest(),count)
+
     def test_selects_counts_without_serializing_raw_evidence(self):
         public = build_data.current_development_evidence()
-        self.assertEqual(public["portableByMode"], {"menu": 64, "duel": 64, "heroes": 64})
-        self.assertEqual((public["galleryChecks"], public["referenceFrames"], public["referenceViewerUiChecks"]), (126, 2, 11))
+        self.assertEqual(public["portableByMode"], {"menu": 76, "duel": 76, "heroes": 76})
+        self.assertEqual((public["galleryChecks"], public["referenceFrames"], public["referenceViewerUiChecks"]), (127, 2, 11))
+        self.assertEqual((public["groundingChecks"],public["approachChecks"],public["pairedOpponentChecks"]),(43,40,169))
+        self.assertEqual((public["pairedArmChecks"],public["genericArmChecks"],public["pairedMatchups"],public["pairedSampleHz"]),(33,22,12,240))
         for hidden in ("private-account", "private-source-path", "private-comparison-path", "res://", "127.0.0.1"):
             self.assertNotIn(hidden, json.dumps(public))
 
@@ -322,15 +370,15 @@ class DevelopmentEvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_data.current_development_evidence()
 
-    def test_same_check_counts_cannot_relabel_new_model_or_build_as_h(self):
-        gallery_path = self.root / "artifacts/hero-gallery-tests.json"
+    def test_same_check_counts_cannot_relabel_new_model_or_build_as_reviewed_snapshot(self):
+        gallery_path = self.root / build_data.REVIEWED_REPORTS["gallery"][0]
         gallery = json.loads(gallery_path.read_text(encoding="utf-8"))
         gallery["heroes"][0]["model_sha256"] = "d" * 64
-        gallery_path.write_text(json.dumps(gallery), encoding="utf-8")
+        self.write_report("gallery",gallery)
         with self.assertRaisesRegex(ValueError, "gallery model changed"):
             build_data.current_development_evidence()
-        gallery["heroes"][0]["model_sha256"] = build_data.REVIEWED_H_MODEL_SHA256
-        gallery_path.write_text(json.dumps(gallery), encoding="utf-8")
+        gallery["heroes"][0]["model_sha256"] = build_data.REVIEWED_MODELS["lubu"][1]
+        self.write_report("gallery",gallery)
         new_pck = "e" * 64
         self.build["packaged_sha256"]["Tianxia.pck"] = new_pck
         self.write("build/Tianxia/build-manifest.json", self.build)
@@ -341,6 +389,48 @@ class DevelopmentEvidenceTests(unittest.TestCase):
             path.write_text(json.dumps(result), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "packaged build changed"):
             build_data.current_development_evidence()
+
+    def test_changed_report_bytes_cannot_reuse_same_green_count(self):
+        path=self.root/build_data.REVIEWED_REPORTS["grounding"][0]
+        report=json.loads(path.read_text());report["new_unreviewed_scope"]=True
+        path.write_text(json.dumps(report),encoding="utf-8")
+        with self.assertRaisesRegex(ValueError,"report bytes changed"):
+            build_data.current_development_evidence()
+
+    def test_live_model_curve_or_package_bytes_cannot_diverge_from_pins(self):
+        for name in (build_data.REVIEWED_MODELS["guanyu"][0],"assets/animations/duel-exchanges.json","build/Tianxia/Tianxia.pck"):
+            path=self.root/name;original=path.read_bytes();path.write_bytes(b"unreviewed new bytes")
+            with self.subTest(path=name),self.assertRaises(ValueError):build_data.current_development_evidence()
+            path.write_bytes(original)
+
+    def test_subset_matchups_or_missing_contact_cannot_support_all_pair_claim(self):
+        path=self.root/build_data.REVIEWED_REPORTS["opponent"][0]
+        original=json.loads(path.read_text())
+        for defect in ("missing_pair","miss_has_contact","hit_has_no_contact","lower_rate"):
+            report=copy.deepcopy(original)
+            if defect=="missing_pair":report["pairs"].pop()
+            elif defect=="miss_has_contact":report["pairs"][0]["summary"]["miss"]["torso_frames"]=[184]
+            elif defect=="hit_has_no_contact":report["pairs"][0]["summary"]["hit"]["torso_frames"]=[]
+            else:report["fps"]=60
+            self.write_report("opponent",report)
+            with self.subTest(defect=defect),self.assertRaises(ValueError):build_data.current_development_evidence()
+
+    def test_partial_arm_sampling_or_unstable_report_inputs_reject(self):
+        path=self.root/build_data.REVIEWED_REPORTS["paired_arms"][0]
+        original=json.loads(path.read_text())
+        report=copy.deepcopy(original);report["full_unique_vertices"]=False
+        self.write_report("paired_arms",report)
+        with self.assertRaisesRegex(ValueError,"full-mesh"):build_data.current_development_evidence()
+        report=copy.deepcopy(original);report["after_hashes"]={"changed":"d"*64}
+        self.write_report("paired_arms",report)
+        with self.assertRaisesRegex(ValueError,"stable inputs"):build_data.current_development_evidence()
+
+    def test_existing_public_snapshot_cannot_inflate_current_counts(self):
+        public=build_data.current_development_evidence()
+        snapshot={"sources":[],"statuses":[],"domains":[],"cards":[],"milestones":[],"developmentEvidence":public}
+        build_data.validate(snapshot)
+        public["pairedMatchups"]=16
+        with self.assertRaisesRegex(ValueError,"snapshot contract"):build_data.validate(snapshot)
 
 
 if __name__ == "__main__":

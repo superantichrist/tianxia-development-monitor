@@ -116,7 +116,8 @@
   }
 
   function initialize() {
-    setText("#hero-version", `v${data.project.latestVerified}`);
+    setText("#hero-version", `개발 v${data.project.currentVersion}`);
+    $("#hero-version").title = `마지막 완료 마일스톤 v${data.project.latestVerified}`;
     setText("#current-milestone", data.project.currentMilestone);
     setText("#current-milestone-title", data.project.currentMilestoneTitle || "개별 전투·3D 캠페인·일기토");
     setText("#count-active", data.cards.filter((item) => item.status === "in_progress").length);

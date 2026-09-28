@@ -1,6 +1,6 @@
 window.MONITOR_DATA = {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-14T14:30:01+00:00",
+  "updatedAt": "2026-09-28T08:19:01+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -113,19 +113,19 @@ window.MONITOR_DATA = {
       "status": "complete",
       "milestone": "M05",
       "summary": "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.",
-      "evidence": "일기토 합계 210개 headless 검사. 이후 H 개선 빌드의 메뉴 64개·일기토 64개·장수 감상 64개, 합계 192개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다. 통합 보고 영상과 비공개 업로드를 검증했습니다.",
+      "evidence": "현재 I/arm_v3·v4 빌드의 메뉴 76개·일기토 76개·장수 감상 76개, 합계 228개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다.",
       "next": "장수별 무기 접촉·전용 동작과 연출 확장",
       "priority": "focus"
     },
     {
       "id": "hero_models",
-      "title": "여포 H 중간 개선과 네 장수 모델",
+      "title": "여포 I와 세 장수의 상완·발목 개선",
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "여포의 머리 비례·갈라진 허벅지 갑주·얼굴과 손 재질을 보정한 H 모델을 현재 검증 빌드에 채택했습니다. 관우·장비·마초와 원화의 개성을 3D로 맞추는 작업은 계속됩니다.",
-      "evidence": "실제 H 화면 검수와 네 모델의 포즈 24개 검사 / 1,836개 표본을 확인했습니다. 손의 큰 자기 몸 관통은 개선됐으나 상대 몸통에서의 회수·얼굴 횡단·갑주와 피부의 미술 격차가 남습니다. 독립 발목 I는 제작 중인 별도 후보입니다.",
-      "next": "장수의 위용·얼굴 식별·재질을 원화와 맞추고 발목 후보와 가중 스키닝 검수",
+      "summary": "여포 I와 관우·장비·마초 arm_v3를 실제 명단과 새 실행본에 채택했습니다. 독립 발목을 유지하면서 어깨·상완 연결을 수정했습니다.",
+      "evidence": "현재 모델의 모든 팔 정점 표본 검사: 공방 33개·일반 동작 22개 통과. 한 축 몸통 envelope이며 어깨 접합부 상단 30%는 제외합니다. 원화와 3D의 얼굴·갑주·피부 격차, 강체 관절과 가중 스키닝 과제는 남습니다.",
+      "next": "장수의 위용·얼굴 식별·재질을 원화와 맞추고 골반·흉곽·옷의 변형 개선",
       "priority": "focus"
     },
     {
@@ -135,8 +135,8 @@ window.MONITOR_DATA = {
       "status": "complete",
       "milestone": "M05.1 · 감상 도구",
       "summary": "여포·관우·장비·마초 원화와 실제 3D 모델을 나란히 보고 회전·확대·전신·얼굴·대기·공격·방어를 선택하는 별도 감상 모드를 연결했습니다.",
-      "evidence": "감상 기능 126개 검사와 실제 화면 검수. 동작별 카메라 맞춤, 얼굴 보기의 무기 숨김·복구, 수동 회전·확대를 확인했습니다. 네 장수 3D 품질이나 실제 일기토 공방을 완료한 판정은 아닙니다.",
-      "next": "모델·클립 개선 때 얼굴·전신 구도와 동작 감상 재검수",
+      "evidence": "현재 네 모델로 감상 기능 127개 headless 검사 통과. 동작별 구도, 얼굴 보기 무기 숨김·복구와 수동 조작 보존을 검사했습니다. 모델 품질이나 실제 일기토의 자연스러움 완료 판정은 아닙니다.",
+      "next": "모델·클립 개선 때 얼굴·전신 구도와 실제 화면 동작 감상 재검수",
       "priority": "normal"
     },
     {
@@ -222,20 +222,20 @@ window.MONITOR_DATA = {
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "Blender의 28개 컨트롤 Action을 일기토에 연결해 여포 횡베기·관우 중량 베기·장비와 마초의 찌르기에 몸통 회전과 앞발 이동을 넣었습니다.",
-      "evidence": "장수 동작 29개 검사, 장수마다 569프레임의 베이크와 실제 GPU 준비·타격·피격·받아치기 검수. M05.1 통합 영상과 비공개 업로드는 아직 검증 중입니다.",
-      "next": "서로 맞물리는 무기 접촉·타격 후 빼기·다방향 연속기·전신 스키닝",
+      "summary": "장수별 공격과 양손 IK를 유지하며 v4 공방에서 장비·마초의 바깥 진입, 관우·장비의 낮은 후속 궤적을 연결했습니다.",
+      "evidence": "실제 GPU 구간을 프레임 단위로 비교했습니다. 준비·회수의 긴 멈춤, 단단한 허리 회전과 약한 반발·체중 전달은 아직 보입니다. M05.1 통합 영상을 촬영했으며 최종 검수·비공개 업로드는 대기 중입니다.",
+      "next": "두 무기가 실제 맞닿는 저작 접점, 받아내는 체중과 연속적인 회수 동작",
       "priority": "focus"
     },
     {
       "id": "paired_motion",
-      "title": "두 장수가 맞물리는 공방과 발 접지",
+      "title": "두 장수의 v4 공방과 실제 바닥 접지",
       "domain": "battle",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "진입·위협·접촉·상대 반응·무기 회수·간격 회복을 하나의 시간축과 두 인물의 이동 곡선으로 연결하는 작업을 진행합니다.",
-      "evidence": "H 첫 공격 58프레임 비교에서 몸통에 겹친 채 회복, 얼굴을 가로지르는 무기, 큰 자세 변화, HP·반응 시차와 약한 발 접지를 확인했습니다. 현재 H 빌드에는 새 맞춤 공방과 독립 발목 I 후보가 통합 완료되지 않았습니다.",
-      "next": "Blender 두 인물 제작 장면·접촉 표식·발목과 발바닥 앵커를 게임 재생에 연결하고 실제 근접 화면 검수",
+      "summary": "두 장수의 공통 시간축, 접근→준비 자세 연결과 모델별 실제 밑창 높이를 경기장 바닥에 맞췄습니다. 장병기의 이른 몸통 진입과 방어 후 회수 경로를 수정했습니다.",
+      "evidence": "현 명단 12개 공격 방향 × 4결과, 240Hz·20,592개 두 배우 자세에서 상대 검사 169개 통과. 실제 접지 43개·접근 연결 40개 통과. 유한 표본과 한 축 envelope 검사이며 연속 무관통·정확한 충돌 시각·자연스러운 전투의 보장은 아닙니다.",
+      "next": "접점과 양쪽 반응을 함께 저작하고 경직된 허리·회수 멈춤·체중 이동 개선",
       "priority": "focus"
     },
     {
@@ -243,10 +243,10 @@ window.MONITOR_DATA = {
       "title": "원작·제작본 프레임 비교 도구",
       "domain": "tooling",
       "status": "complete",
-      "milestone": "M05.1 · 참고 분석",
-      "summary": "공개 원작 영상 2개의 추출 439프레임과 H 첫 공격 58프레임을 독립적으로 이동·재생·확대하는 로컬 비교 도구를 검증했습니다.",
-      "evidence": "원본 PTS와 29.97·25FPS, H의 30FPS를 구분했습니다. 실제 브라우저 조작 11건 통과. 주력 구간은 연속 64프레임의 잘라낸 장면표·전체 해상도 1장·간격을 둔 개요 17개를 확인했으며 전체 439장을 모두 시각 검수한 것은 아닙니다.",
-      "next": "두 장수의 공통 시간축·회피·낮아짐·거리 회복을 새 공방 제작과 비교 검수에 적용",
+      "milestone": "M05.1 · 과거 참고 분석",
+      "summary": "공개 원작 영상 2개의 추출 439프레임과 당시 H 첫 공격 58프레임을 독립적으로 이동·재생·확대하는 로컬 도구의 검증 기록입니다. H는 현재 모델이 아닙니다.",
+      "evidence": "이 과거 스냅샷은 원본 PTS와 29.97·25FPS, H의 30FPS를 구분했고 브라우저 조작 11건을 통과했습니다. 주력 연속 64프레임의 장면표·전체 해상도 1장·개요 17개를 확인했으며 추출 439장 전체 시각 검수를 뜻하지 않습니다.",
+      "next": "최신 제작본은 별도 촬영·검수하고 과거 참고 분석과 구별",
       "priority": "normal"
     },
     {
@@ -401,10 +401,10 @@ window.MONITOR_DATA = {
     {
       "area": "모델·재질·표현",
       "domain": "graphics",
-      "current": "독자 3D 모델·2K 피부 재질·3단계 LOD·여포 H 비례와 갑주 개선·네 장수 원화/3D 감상",
-      "gap": "원화와 3D의 미술 격차·가중 스키닝·지형 접지·말 골격·의상 품질",
-      "next": "독립 발목 후보 검수, 장수의 위용·얼굴·갑옷 재질 개선",
-      "level": "H 중간 개선 · 품질 제작 중"
+      "current": "여포 I·관우/장비/마초 arm_v3 채택, 독립 발목과 상완 연결 개선·네 장수 원화/3D 감상",
+      "gap": "원화와 3D의 미술 격차·가중 스키닝·경사 지형 접지·말 골격·의상 품질",
+      "next": "장수의 위용·얼굴·갑옷 재질과 골반/흉곽 변형 개선",
+      "level": "현재 모델 통합 · 품질 제작 중"
     },
     {
       "area": "사운드·제품 완성도",
@@ -417,9 +417,9 @@ window.MONITOR_DATA = {
     {
       "area": "장군 일기토",
       "domain": "battle",
-      "current": "독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과, 원본/H 프레임 비교",
-      "gap": "맞물리는 공방·상대 몸통에서의 무기 회수·얼굴 횡단·자세 전환·발 접지·가중 스키닝",
-      "next": "공통 시간축과 두 인물 이동·접촉·반응·거리 회복을 실제 교전에 연결",
+      "current": "독립 4장수 모드·양손 IK·v4 두 인물 공방·접근 연결·실제 평면 접지·HP와 결과",
+      "gap": "실제 무기끼리 접점·체중과 반발·경직된 허리·회수 멈춤·연속 충돌·가중 스키닝",
+      "next": "맞닿는 두 무기와 양쪽이 힘을 받는 공방, 연속적인 회수 저작",
       "level": "M05 기반 완료 · M05.1 개선 중"
     },
     {
@@ -485,7 +485,7 @@ window.MONITOR_DATA = {
       "id": "M05.1",
       "title": "병사 무기 자세·장수 전신 동작",
       "status": "in_progress",
-      "description": "여포 H 중간 개선·4장수 감상·원본 439/H 58프레임 비교 도구 확인 · 맞물리는 공방·독립 발목·가중 스키닝은 제작 중, 새 통합 영상·업로드 미완료",
+      "description": "여포 I·세 장수 arm_v3·v4 공방·접지·새 휴대 실행본 검증 · 경직된 허리·회수 반응·가중 스키닝 개선 중, 통합 영상 촬영 후 최종 검수·비공개 업로드 대기",
       "checks": {},
       "videoVerified": false
     },
@@ -550,7 +550,7 @@ window.MONITOR_DATA = {
     "individualRenderGpu": 776,
     "individualRenderGpuVerified": true,
     "duelHeadless": 210,
-    "portableHeadless": 192,
+    "portableHeadless": 228,
     "heroPoseChecks": 24,
     "heroPoseSamples": 1836,
     "uiGpu": 19,
@@ -564,19 +564,42 @@ window.MONITOR_DATA = {
     "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
   },
   "developmentEvidence": {
-    "galleryChecks": 126,
+    "galleryChecks": 127,
     "galleryHeroes": 4,
     "portableByMode": {
-      "menu": 64,
-      "duel": 64,
-      "heroes": 64
+      "menu": 76,
+      "duel": 76,
+      "heroes": 76
     },
-    "portablePckSha256": "c23dbc83e0a80b94ba0a306f508648038576928407a74162a9e2510911c7308c",
+    "portablePckSha256": "0ac1eb6b76f1f120b67af1089d70d4cdca60497ed9fe02b5b0f37d047cb01624",
+    "modelRevisions": {
+      "lubu": "I",
+      "guanyu": "arm_v3",
+      "zhangfei": "arm_v3",
+      "machao": "arm_v3"
+    },
+    "modelSha256": {
+      "lubu": "9a5ca5628553fc95ea358a4f078c0faffcdcd7346a120c789aaa85c9fc7f1cfb",
+      "guanyu": "53d7d92dfba7d3a40afa2fc41118d5c1233d176d1355329b1a5a64d14af7e708",
+      "zhangfei": "08a14d403c09da4d43bd3794257f043c9d9e9252150c8e57d5ba2a9e01056592",
+      "machao": "73f44e4bfaae268721088d403735b335aa1720e340daabaaa26a9e060ef3e6ec"
+    },
+    "pairedCurveRevision": "v4",
+    "pairedCurveSha256": "8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c",
+    "groundingChecks": 43,
+    "approachChecks": 40,
+    "pairedOpponentChecks": 169,
+    "pairedMatchups": 12,
+    "pairedSampleHz": 240,
+    "pairedActorPairPoses": 20592,
+    "pairedArmChecks": 33,
+    "genericArmChecks": 22,
     "referenceVideos": 2,
     "referenceFrames": 439,
     "comparisonFrames": 58,
     "referenceViewerUiChecks": 11,
-    "scope": "검토된 H 중간 빌드·감상 도구·참고 영상 분석의 범위입니다. 새 공방과 발목 후보의 완료 또는 전체 프레임 시각 검수를 뜻하지 않습니다."
+    "referenceSnapshot": "과거 H 첫 공격 비교 도구의 검증 기록",
+    "scope": "현재 I/arm_v3 모델·v4 공방·검증된 휴대 실행본의 기능/유한 형상 검사입니다. 한 축 envelope와 어깨 접합부 제외 조건이 있으며 연속 충돌·자연스러움·M05.1 완료를 뜻하지 않습니다. 참고 뷰어 수치는 과거 H 비교 스냅샷입니다."
   },
   "officerCatalog": {
     "referenceEntries": 1000,

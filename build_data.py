@@ -19,8 +19,24 @@ PUBLIC_REFERENCE_URLS = frozenset({
     "https://www.youtube.com/watch?v=EhPbt8CLEFo",
     "https://www.youtube.com/watch?v=Qp-6yLLrPzI",
 })
-REVIEWED_H_PCK_SHA256 = "c23dbc83e0a80b94ba0a306f508648038576928407a74162a9e2510911c7308c"
-REVIEWED_H_MODEL_SHA256 = "502ac2f3e2b39e619be15eafc22ac86f5a8bf23f2afae186f12057ce2d886595"
+REVIEWED_PCK_SHA256 = "0ac1eb6b76f1f120b67af1089d70d4cdca60497ed9fe02b5b0f37d047cb01624"
+REVIEWED_CURVE_SHA256 = "8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c"
+REVIEWED_MODELS = {
+    "lubu": ("assets/models/heroes/r3/lubu-i.glb", "9a5ca5628553fc95ea358a4f078c0faffcdcd7346a120c789aaa85c9fc7f1cfb"),
+    "guanyu": ("assets/models/heroes/arm_v3/guanyu.glb", "53d7d92dfba7d3a40afa2fc41118d5c1233d176d1355329b1a5a64d14af7e708"),
+    "zhangfei": ("assets/models/heroes/arm_v3/zhangfei.glb", "08a14d403c09da4d43bd3794257f043c9d9e9252150c8e57d5ba2a9e01056592"),
+    "machao": ("assets/models/heroes/arm_v3/machao.glb", "73f44e4bfaae268721088d403735b335aa1720e340daabaaa26a9e060ef3e6ec"),
+}
+# Pins bind the selected counts to the reviewed report bytes, not just a green
+# count from any later revision. No report object is serialized to the site.
+REVIEWED_REPORTS = {
+    "gallery": ("artifacts/hero-gallery-arm-v3-r1.json", "b57091fb8ab9198275190b69b195b775629c659daa1bf5eac65917232895d0d8", 127),
+    "grounding": ("artifacts/hero-grounding-runtime-armv3-v4-r1.json", "7448374cbb7ea13c89d7fe332f9b3e08cd73bfe5f2694439ae4ddb242de3e3f4", 43),
+    "approach": ("artifacts/duel-approach-runtime-armv3-v4-r1.json", "e9e7027063bf6bcf306a4c0821aeb25cc469f2ab8b1f84873a9714ba2cde118f", 40),
+    "opponent": ("artifacts/duel-exchange-opponent-all-armv3-v4-r1.json", "86a1c89417a1a524d98205292b3af472654affe0442354344fcd61e38f7749b9", 169),
+    "paired_arms": ("artifacts/hero-arms-arm-v3-paired-v4-fullmesh.json", "6ea9830b650255bb06a04c4518c148e3ffcd9516c3094881223d53dbdee1eb08", 33),
+    "generic_arms": ("artifacts/hero-arms-arm-v3-generic-fullmesh.json", "21be1c393118b1e43af6c2004c44b8be0c845765350590ce7a96970ba744883c", 22),
+}
 
 
 def read_json(relative: str) -> dict:
@@ -45,34 +61,99 @@ def card(key, title, domain, status, milestone, summary, evidence, next_step, pr
                 summary=summary, evidence=evidence, next=next_step, priority=priority)
 
 
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def reviewed_report(key: str) -> dict:
+    name, expected, count = REVIEWED_REPORTS[key]
+    path = ROOT / name
+    if not path.is_file() or file_sha256(path) != expected:
+        raise ValueError("Reviewed report bytes changed: " + key)
+    report = read_json(name)
+    if report.get("passed") != count or report.get("failures") != []:
+        raise ValueError("Reviewed report count or failures changed: " + key)
+    for before, after in (("sources_before", "sources_after"), ("sources", "after"), ("source_hashes", "after_hashes")):
+        if before in report and (not report[before] or report[before] != report.get(after)):
+            raise ValueError("Report does not attest stable inputs: " + key)
+    return report
+
+
 def current_development_evidence() -> dict:
     """Select reviewed counts, without publishing raw reports or local paths."""
-    gallery = read_json("artifacts/hero-gallery-tests.json")
+    reports = {key: reviewed_report(key) for key in REVIEWED_REPORTS}
+    gallery = reports["gallery"]
     heroes = gallery.get("heroes", [])
     if (gallery.get("failures") != [] or not number(gallery.get("passed")) or len(heroes) != 4
             or {hero.get("hero") for hero in heroes} != {"lubu", "guanyu", "zhangfei", "machao"}
             or not all(hero.get("authored") is True for hero in heroes)):
         raise ValueError("Four-hero gallery evidence is missing or failed")
-    lubu = next(hero for hero in heroes if hero["hero"] == "lubu")
-    if lubu.get("model_sha256") != REVIEWED_H_MODEL_SHA256:
-        raise ValueError("The gallery model changed after the reviewed H snapshot; review and update the public scope before regeneration")
+    for hero in heroes:
+        path, expected = REVIEWED_MODELS[hero["hero"]]
+        if (hero.get("model_sha256") != expected or hero.get("model") != "res://" + path
+                or not (ROOT / path).is_file() or file_sha256(ROOT / path) != expected):
+            raise ValueError("The gallery model changed after the reviewed I/arm_v3 snapshot")
     build = read_json("build/Tianxia/build-manifest.json")
     pck_hash = build.get("packaged_sha256", {}).get("Tianxia.pck")
     if (build.get("source_unchanged_during_export_and_validation") is not True
             or not re.fullmatch(r"[0-9a-f]{64}", str(pck_hash))):
         raise ValueError("Reviewed portable build provenance is missing")
-    if pck_hash != REVIEWED_H_PCK_SHA256:
-        raise ValueError("The packaged build changed after the reviewed H snapshot; review and update the public scope before regeneration")
+    if pck_hash != REVIEWED_PCK_SHA256 or file_sha256(ROOT / "build/Tianxia/Tianxia.pck") != pck_hash:
+        raise ValueError("The packaged build changed after the reviewed I/arm_v3/v4 snapshot")
+    build_sources = build.get("source_sha256", {})
+    for name, expected in build_sources.items():
+        path = (ROOT / name).resolve()
+        if not within(path, ROOT.resolve()) or not path.is_file() or file_sha256(path) != expected:
+            raise ValueError("Current source differs from the reviewed build: " + name)
+    for path, expected in [*REVIEWED_MODELS.values(), ("assets/animations/duel-exchanges.json", REVIEWED_CURVE_SHA256)]:
+        if build_sources.get(path) != expected:
+            raise ValueError("Reviewed model/curve is missing from the build source identity")
     portable = {}
     for mode in ("menu", "duel", "heroes"):
         result = read_json("artifacts/portable-validation-" + mode + ".json")
         recorded = build.get("headless_checks", {}).get(mode, {})
         if (result.get("failures") != [] or recorded.get("failures") != []
                 or result.get("launch_mode") != mode or result.get("pck_sha256") != pck_hash
-                or not number(result.get("passed")) or recorded.get("passed") != result["passed"]
+                or result.get("passed") != 76 or recorded.get("passed") != result["passed"]
                 or result.get("version") != recorded.get("version")):
             raise ValueError("Portable launch-mode evidence differs from its reviewed build: " + mode)
         portable[mode] = int(result["passed"])
+    opponent = reports["opponent"]
+    pairs = opponent.get("pairs", [])
+    expected_pairs = {(a, b) for a in range(4) for b in range(4) if a != b}
+    if (len(pairs) != 12 or {(p.get("attacker"), p.get("defender")) for p in pairs} != expected_pairs
+            or opponent.get("fps") != 240 or opponent.get("total_actor_pair_frames") != 20592
+            or opponent.get("candidate_curve") != "" or opponent.get("zero_baseline_control") is not False
+            or opponent.get("source_hashes", {}).get("res://assets/animations/duel-exchanges.json") != REVIEWED_CURVE_SHA256):
+        raise ValueError("Opponent evidence must cover the actual adopted roster, all 12 directions at 240Hz")
+    for pair in pairs:
+        if len(pair.get("frames", [])) != 1716 or set(pair.get("summary", {})) != {"hit", "blocked", "parried", "miss"}:
+            raise ValueError("Opponent evidence lacks all four full sampled outcomes")
+        for outcome, values in pair["summary"].items():
+            if values.get("head_frames") != [] or values.get("precontact_torso_frames") != []:
+                raise ValueError("Opponent evidence contains sampled head or early-body overlap")
+            if (outcome == "hit") != bool(values.get("torso_frames")):
+                raise ValueError("Opponent body results differ from the reviewed hit/defense contract")
+        for model in pair.get("models", []):
+            path, expected = REVIEWED_MODELS[model["hero"]]
+            provenance = model.get("provenance", {})
+            before = provenance.get("before_load", {})
+            if (model.get("model_path") != "res://" + path or before.get("model_sha256") != expected
+                    or before != provenance.get("after_trace")):
+                raise ValueError("Opponent model differs from adopted model evidence")
+    for key, expected_heroes, poses in (("paired_arms", set(REVIEWED_MODELS), 600),
+                                      ("generic_arms", set(REVIEWED_MODELS) - {"lubu"}, 2901)):
+        report = reports[key]
+        if (report.get("full_unique_vertices") is not True or report.get("poses") != poses
+                or {h.get("hero") for h in report.get("heroes", [])} != expected_heroes):
+            raise ValueError("Arm evidence does not cover the reviewed full-mesh pose set")
+        for hero in report["heroes"]:
+            if hero.get("after", {}).get("model_sha256") != REVIEWED_MODELS[hero["hero"]][1]:
+                raise ValueError("Arm audit model differs from current adopted model")
     viewer = read_json("artifacts/references/yoho/viewer-ui-validation.json")
     checks = viewer.get("checks", [])
     if viewer.get("failures") != [] or not checks or any(check.get("result") != "pass" for check in checks):
@@ -90,9 +171,17 @@ def current_development_evidence() -> dict:
         raise ValueError("Reviewed viewer requires the two public references and one H comparison")
     return {"galleryChecks": int(gallery["passed"]), "galleryHeroes": len(heroes),
             "portableByMode": portable, "portablePckSha256": pck_hash,
+            "modelRevisions": {"lubu":"I", "guanyu":"arm_v3", "zhangfei":"arm_v3", "machao":"arm_v3"},
+            "modelSha256": {hero: entry[1] for hero, entry in REVIEWED_MODELS.items()},
+            "pairedCurveRevision":"v4", "pairedCurveSha256":REVIEWED_CURVE_SHA256,
+            "groundingChecks":reports["grounding"]["passed"], "approachChecks":reports["approach"]["passed"],
+            "pairedOpponentChecks":opponent["passed"], "pairedMatchups":len(pairs), "pairedSampleHz":240,
+            "pairedActorPairPoses":opponent["total_actor_pair_frames"],
+            "pairedArmChecks":reports["paired_arms"]["passed"], "genericArmChecks":reports["generic_arms"]["passed"],
             "referenceVideos": len(references), "referenceFrames": sum(len(item["frames"]) for item in references),
             "comparisonFrames": len(ours[0]["frames"]), "referenceViewerUiChecks": len(checks),
-            "scope": "검토된 H 중간 빌드·감상 도구·참고 영상 분석의 범위입니다. 새 공방과 발목 후보의 완료 또는 전체 프레임 시각 검수를 뜻하지 않습니다."}
+            "referenceSnapshot":"과거 H 첫 공격 비교 도구의 검증 기록",
+            "scope": "현재 I/arm_v3 모델·v4 공방·검증된 휴대 실행본의 기능/유한 형상 검사입니다. 한 축 envelope와 어깨 접합부 제외 조건이 있으며 연속 충돌·자연스러움·M05.1 완료를 뜻하지 않습니다. 참고 뷰어 수치는 과거 H 비교 스냅샷입니다."}
 
 
 def _completion_evidence(milestone: dict, milestone_id: str) -> dict:
@@ -331,9 +420,9 @@ def build() -> dict:
         card("contact", "전선 접촉과 개별 타격", "battle", "in_progress", "M05", "접근 → 공격 준비 → 타격 → 회복. 공간 격자로 개인 접촉을 계산합니다.", "첫 분리 모델은 제한된 후보와 위치 보정을 사용합니다. 완전한 비관통 물리가 아닙니다.", "전선 후보 축소, 아군 교차, 표적 점유와 좁은 통로 검증", "focus"),
         card("terrain", "연속된 3D 캠페인 지형", "campaign", m05_state, "M05", "도시와 길이 연결된 캠페인을 높낮이가 있는 연속 지형으로 확장했습니다.", f"캠페인 지형·군대 210개 검사와 GPU 화면 확인. 실제 GPU에서 전체 UI 흐름 {ui_checks}개 검사도 통과했습니다. {movie_progress}", "캠페인 조작·지형·군대 이동의 그래픽과 플레이 품질 확장", "focus"),
         card("campaign_armies", "지도 위 3D 군대와 장수", "campaign", m05_state, "M05", "군대의 장수 모델·깃발·선택 표시를 지도에 배치하고 이동 명령에 연결했습니다.", "3D 배치·색상·선택·행군·제거를 포함한 캠페인 검사와 GPU 화면 확인. " + movie_progress, "군대 행군 동작·지형 상호작용과 전략 지도 콘텐츠 확장", "focus"),
-        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", m05_state, "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"일기토 합계 {duel_checks}개 headless 검사. 이후 H 개선 빌드의 메뉴 {development['portableByMode']['menu']}개·일기토 {development['portableByMode']['duel']}개·장수 감상 {development['portableByMode']['heroes']}개, 합계 {portable_checks}개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다. {movie_progress}", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
-        card("hero_models", "여포 H 중간 개선과 네 장수 모델", "graphics", "in_progress", "M05.1", "여포의 머리 비례·갈라진 허벅지 갑주·얼굴과 손 재질을 보정한 H 모델을 현재 검증 빌드에 채택했습니다. 관우·장비·마초와 원화의 개성을 3D로 맞추는 작업은 계속됩니다.", f"실제 H 화면 검수와 네 모델의 포즈 {pose_checks}개 검사 / {pose_samples:,}개 표본을 확인했습니다. 손의 큰 자기 몸 관통은 개선됐으나 상대 몸통에서의 회수·얼굴 횡단·갑주와 피부의 미술 격차가 남습니다. 독립 발목 I는 제작 중인 별도 후보입니다.", "장수의 위용·얼굴 식별·재질을 원화와 맞추고 발목 후보와 가중 스키닝 검수", "focus"),
-        card("hero_gallery", "네 장수의 원화·3D 동작 감상", "graphics", "complete", "M05.1 · 감상 도구", "여포·관우·장비·마초 원화와 실제 3D 모델을 나란히 보고 회전·확대·전신·얼굴·대기·공격·방어를 선택하는 별도 감상 모드를 연결했습니다.", f"감상 기능 {development['galleryChecks']}개 검사와 실제 화면 검수. 동작별 카메라 맞춤, 얼굴 보기의 무기 숨김·복구, 수동 회전·확대를 확인했습니다. 네 장수 3D 품질이나 실제 일기토 공방을 완료한 판정은 아닙니다.", "모델·클립 개선 때 얼굴·전신 구도와 동작 감상 재검수"),
+        card("duel_mode", "별도로 실행하는 일기토 모드", "battle", m05_state, "M05", "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.", f"현재 I/arm_v3·v4 빌드의 메뉴 {development['portableByMode']['menu']}개·일기토 {development['portableByMode']['duel']}개·장수 감상 {development['portableByMode']['heroes']}개, 합계 {portable_checks}개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다.", "장수별 무기 접촉·전용 동작과 연출 확장", "focus"),
+        card("hero_models", "여포 I와 세 장수의 상완·발목 개선", "graphics", "in_progress", "M05.1", "여포 I와 관우·장비·마초 arm_v3를 실제 명단과 새 실행본에 채택했습니다. 독립 발목을 유지하면서 어깨·상완 연결을 수정했습니다.", f"현재 모델의 모든 팔 정점 표본 검사: 공방 {development['pairedArmChecks']}개·일반 동작 {development['genericArmChecks']}개 통과. 한 축 몸통 envelope이며 어깨 접합부 상단 30%는 제외합니다. 원화와 3D의 얼굴·갑주·피부 격차, 강체 관절과 가중 스키닝 과제는 남습니다.", "장수의 위용·얼굴 식별·재질을 원화와 맞추고 골반·흉곽·옷의 변형 개선", "focus"),
+        card("hero_gallery", "네 장수의 원화·3D 동작 감상", "graphics", "complete", "M05.1 · 감상 도구", "여포·관우·장비·마초 원화와 실제 3D 모델을 나란히 보고 회전·확대·전신·얼굴·대기·공격·방어를 선택하는 별도 감상 모드를 연결했습니다.", f"현재 네 모델로 감상 기능 {development['galleryChecks']}개 headless 검사 통과. 동작별 구도, 얼굴 보기 무기 숨김·복구와 수동 조작 보존을 검사했습니다. 모델 품질이나 실제 일기토의 자연스러움 완료 판정은 아닙니다.", "모델·클립 개선 때 얼굴·전신 구도와 실제 화면 동작 감상 재검수"),
         card("models", "인물·기병·말 모델 개선", "graphics", complete03, "M03", "인체 기반 얼굴, 피부 색상·노멀 재질과 병사·기병·말 8종을 개선했습니다.", "모델·재질 검사, 확대 GPU 화면, 실행 빌드와 마일스톤 영상 확인.", "골격 리깅, 보행·공격·피격 동작과 재질 품질 확장"),
         card("lod", "근접 공간 분할과 그림자 LOD", "performance", complete031, "M03.1", "가까운 공간 구역만 상세 모델로 표현해 근접 렌더 비용을 줄였습니다.", "GPU 354검사, 병사 수 보존, 동일 조건 근접·원거리 측정.", "새 개별 전투 통합 후 같은 조건에서 다시 측정"),
         card("campaign_base", "캠페인 기본 운영", "campaign", "complete", "기반", "8세력·30도시, 계절·세금·식량·민심·도시 건설·군대 운용을 연결했습니다.", "현재 기능 범위 문서에 기록된 실행 가능한 기본 시스템.", "세력별 구조·정치·경제·지도 콘텐츠를 확장"),
@@ -341,9 +430,9 @@ def build() -> dict:
         card("mod_tools", "모드 제작 도구와 정적 진단", "modding", "complete", "M04 · 도구", "공식 RPFM·스키마·의존성 캐시와 읽기 전용 진단 경로를 구성했습니다.", "설치 팩별 분리 진단과 복구 가능한 튜닝 후보를 준비했습니다.", "실제 원작 캠페인·전투에서 조합과 호환성 검증"),
         card("mod_runtime", "원작 모드·튜닝 플레이 비교", "modding", "in_progress", "M04", "기존 모드 구성의 내장 전투와 새 유비 캠페인에서 군대 이동·초기 전투·결정적 승리·캠페인 복귀를 실제 확인했습니다.", f"9월 9일 내장 전투 CSV {original_metrics['frame_count']:,}프레임 / {original_metrics['total_frame_time_seconds']:.3f}초, 전체 행 평균 {original_metrics['average_fps']:.3f} FPS. 9월 10일 1,263 대 721명 초기 전투와 장비 일기토 시작 확인. 일기토 개별 결과는 미확인이며 이 원작 FPS를 Godot와 비교하지 않습니다.", "실제 저장·재실행·리플레이 재생·근접 일기토·같은 조건의 품질 후보·패치 효과 확인"),
         card("soldier_animation", "상대를 향한 병사 무기와 관절 동작", "graphics", m051_state, "M05.1", "창을 교전 상대 앞으로 낮추고 칼·방패·활·쇠뇌의 서로 다른 동작을 실제 개인 공격·이동 위상에 연결했습니다.", f"Blender v4 자산 7종 × 3 LOD. {soldier_animation_checks}개 검사 / {soldier_pose_samples:,}개 자세에서 무기 길이·팔 관절·방향을 확인했습니다. GPU {gpu_checks}개 렌더 검사와 근접 화면 검수를 수행했습니다. 고정 프레임 검수는 실시간 FPS가 아닙니다.", "무기 궤적 충돌·지형 발 접지·기병과 말 동작 품질 확장", "focus"),
-        card("hero_animation", "장수마다 다른 전신 공격", "graphics", m051_state, "M05.1", "Blender의 28개 컨트롤 Action을 일기토에 연결해 여포 횡베기·관우 중량 베기·장비와 마초의 찌르기에 몸통 회전과 앞발 이동을 넣었습니다.", f"장수 동작 {hero_animation_checks}개 검사, 장수마다 569프레임의 베이크와 실제 GPU 준비·타격·피격·받아치기 검수. {('통합 영상과 비공개 업로드를 확인했습니다.' if m051_complete else 'M05.1 통합 영상과 비공개 업로드는 아직 검증 중입니다.')}", "서로 맞물리는 무기 접촉·타격 후 빼기·다방향 연속기·전신 스키닝", "focus"),
-        card("paired_motion", "두 장수가 맞물리는 공방과 발 접지", "battle", "in_progress", "M05.1", "진입·위협·접촉·상대 반응·무기 회수·간격 회복을 하나의 시간축과 두 인물의 이동 곡선으로 연결하는 작업을 진행합니다.", "H 첫 공격 58프레임 비교에서 몸통에 겹친 채 회복, 얼굴을 가로지르는 무기, 큰 자세 변화, HP·반응 시차와 약한 발 접지를 확인했습니다. 현재 H 빌드에는 새 맞춤 공방과 독립 발목 I 후보가 통합 완료되지 않았습니다.", "Blender 두 인물 제작 장면·접촉 표식·발목과 발바닥 앵커를 게임 재생에 연결하고 실제 근접 화면 검수", "focus"),
-        card("reference_viewer", "원작·제작본 프레임 비교 도구", "tooling", "complete", "M05.1 · 참고 분석", f"공개 원작 영상 {development['referenceVideos']}개의 추출 {development['referenceFrames']}프레임과 H 첫 공격 {development['comparisonFrames']}프레임을 독립적으로 이동·재생·확대하는 로컬 비교 도구를 검증했습니다.", f"원본 PTS와 29.97·25FPS, H의 30FPS를 구분했습니다. 실제 브라우저 조작 {development['referenceViewerUiChecks']}건 통과. 주력 구간은 연속 64프레임의 잘라낸 장면표·전체 해상도 1장·간격을 둔 개요 17개를 확인했으며 전체 439장을 모두 시각 검수한 것은 아닙니다.", "두 장수의 공통 시간축·회피·낮아짐·거리 회복을 새 공방 제작과 비교 검수에 적용"),
+        card("hero_animation", "장수마다 다른 전신 공격", "graphics", m051_state, "M05.1", "장수별 공격과 양손 IK를 유지하며 v4 공방에서 장비·마초의 바깥 진입, 관우·장비의 낮은 후속 궤적을 연결했습니다.", "실제 GPU 구간을 프레임 단위로 비교했습니다. 준비·회수의 긴 멈춤, 단단한 허리 회전과 약한 반발·체중 전달은 아직 보입니다. " + ("통합 영상과 비공개 업로드를 확인했습니다." if m051_complete else "M05.1 통합 영상을 촬영했으며 최종 검수·비공개 업로드는 대기 중입니다."), "두 무기가 실제 맞닿는 저작 접점, 받아내는 체중과 연속적인 회수 동작", "focus"),
+        card("paired_motion", "두 장수의 v4 공방과 실제 바닥 접지", "battle", "in_progress", "M05.1", "두 장수의 공통 시간축, 접근→준비 자세 연결과 모델별 실제 밑창 높이를 경기장 바닥에 맞췄습니다. 장병기의 이른 몸통 진입과 방어 후 회수 경로를 수정했습니다.", f"현 명단 {development['pairedMatchups']}개 공격 방향 × 4결과, {development['pairedSampleHz']}Hz·{development['pairedActorPairPoses']:,}개 두 배우 자세에서 상대 검사 {development['pairedOpponentChecks']}개 통과. 실제 접지 {development['groundingChecks']}개·접근 연결 {development['approachChecks']}개 통과. 유한 표본과 한 축 envelope 검사이며 연속 무관통·정확한 충돌 시각·자연스러운 전투의 보장은 아닙니다.", "접점과 양쪽 반응을 함께 저작하고 경직된 허리·회수 멈춤·체중 이동 개선", "focus"),
+        card("reference_viewer", "원작·제작본 프레임 비교 도구", "tooling", "complete", "M05.1 · 과거 참고 분석", f"공개 원작 영상 {development['referenceVideos']}개의 추출 {development['referenceFrames']}프레임과 당시 H 첫 공격 {development['comparisonFrames']}프레임을 독립적으로 이동·재생·확대하는 로컬 도구의 검증 기록입니다. H는 현재 모델이 아닙니다.", f"이 과거 스냅샷은 원본 PTS와 29.97·25FPS, H의 30FPS를 구분했고 브라우저 조작 {development['referenceViewerUiChecks']}건을 통과했습니다. 주력 연속 64프레임의 장면표·전체 해상도 1장·개요 17개를 확인했으며 추출 439장 전체 시각 검수를 뜻하지 않습니다.", "최신 제작본은 별도 촬영·검수하고 과거 참고 분석과 구별"),
         card("animation", "병사·말 스키닝과 지면 접지", "graphics", "planned", "후속", "현재 강체 관절과 GPU 해석 동작을 넘어 가중치 스키닝·지형 발 IK·말 골격과 발굽 접지를 확장합니다.", "M05.1의 관절 동작이 자연스러운 전신 스키닝과 접지까지 완성했다는 뜻은 아닙니다.", "발 미끄러짐과 관절 경계가 보이는 근접 장면부터 개선", "focus"),
         card("officer_roster", "가능한 많은 유니크 장수 명부", "campaign", "in_progress", "콘텐츠 확장", f"삼국지 14 공식 이름 목록 {roster_count:,}개 ID를 등록했습니다. 다른 작품의 추가 인물도 신원·출처를 확인해 확장하며 인원 상한을 두지 않습니다.", f"한글 이름 {roster_metrics['koreanNames']}명. 동명이인은 ID를 분리했습니다. 원화 {portrait_count}명·3D 모델 {model_count}명·독립 일기토 {duel_count}명이며, {roster_count:,}명이 플레이 가능하다는 뜻은 아닙니다.", "남은 한글 이름·연의와 정사 출전·중복 신원 검토 후 장수 데이터와 플레이 통합", "focus"),
         card("officer_portraits", "연의 특징을 살린 독자 장수 원화", "graphics", "in_progress", "콘텐츠 확장", f"여포·관우·장비·마초·조운·황충·전위·조조·유비·손권·제갈량·주유, 첫 {portrait_count}명의 그림을 개별 생성했습니다.", f"12개 서로 다른 1,024×1,536 PNG를 직접 검토하고 원본·게임 리소스·갤러리 사본의 SHA-256 일치를 확인했습니다. 공개 장수 명부에서 그림과 제작 상태를 볼 수 있습니다.", "다음 장수 묶음의 얼굴·복식·무기·연령을 개별 설계하고 추가 제작", "focus"),
@@ -361,9 +450,9 @@ def build() -> dict:
         {"area":"개별 병사 전투", "domain":"battle", "current":"개인 위치·속도·HP·접촉·공격 모듈의 전투 연결, 상대 방향의 무기와 관절 동작", "gap":"전선 점유·아군 비관통·정교한 무기 접촉·규모 성능", "next":"개별 접촉·회수·발 접지의 실제 화면 품질 개선", "level":"M05 기반 완료 · 동작 개선 중"},
         {"area":"전술·AI", "domain":"battle", "current":"진형·상성·측후방·돌격·사기·패주, 기본 AI", "gap":"장기 작전·협공·포위·증원·세밀한 시야와 은폐", "next":"개인 접촉과 전술 규칙 결합", "level":"기반 구현"},
         {"area":"공성·물리", "domain":"battle", "current":"성문·성벽 내구도·투석·화공·중앙 진입 경로", "gap":"성벽 위 전투·사다리·공성탑·복합 도시 길 찾기", "next":"장애물과 통로 용량 모델", "level":"기반 구현"},
-        {"area":"모델·재질·표현", "domain":"graphics", "current":"독자 3D 모델·2K 피부 재질·3단계 LOD·여포 H 비례와 갑주 개선·네 장수 원화/3D 감상", "gap":"원화와 3D의 미술 격차·가중 스키닝·지형 접지·말 골격·의상 품질", "next":"독립 발목 후보 검수, 장수의 위용·얼굴·갑옷 재질 개선", "level":"H 중간 개선 · 품질 제작 중"},
+        {"area":"모델·재질·표현", "domain":"graphics", "current":"여포 I·관우/장비/마초 arm_v3 채택, 독립 발목과 상완 연결 개선·네 장수 원화/3D 감상", "gap":"원화와 3D의 미술 격차·가중 스키닝·경사 지형 접지·말 골격·의상 품질", "next":"장수의 위용·얼굴·갑옷 재질과 골반/흉곽 변형 개선", "level":"현재 모델 통합 · 품질 제작 중"},
         {"area":"사운드·제품 완성도", "domain":"graphics", "current":"합성 배경음·북소리, 한국어 UI, 캠페인 저장", "gap":"장수 음성·전체 효과음·멀티플레이·튜토리얼·접근성", "next":"핵심 기능 검증 후 범위별 확장", "level":"기반 구현"},
-        {"area":"장군 일기토", "domain":"battle", "current":"독립 모드·4장수·양손 IK·Blender 전신 동작·피격·받아치기·실제 HP와 결과, 원본/H 프레임 비교", "gap":"맞물리는 공방·상대 몸통에서의 무기 회수·얼굴 횡단·자세 전환·발 접지·가중 스키닝", "next":"공통 시간축과 두 인물 이동·접촉·반응·거리 회복을 실제 교전에 연결", "level":"M05 기반 완료 · M05.1 개선 중"},
+        {"area":"장군 일기토", "domain":"battle", "current":"독립 4장수 모드·양손 IK·v4 두 인물 공방·접근 연결·실제 평면 접지·HP와 결과", "gap":"실제 무기끼리 접점·체중과 반발·경직된 허리·회수 멈춤·연속 충돌·가중 스키닝", "next":"맞닿는 두 무기와 양쪽이 힘을 받는 공방, 연속적인 회수 저작", "level":"M05 기반 완료 · M05.1 개선 중"},
         {"area":"유니크 장수·원화", "domain":"graphics", "current":f"공식 참고 명부 {roster_count:,}개 ID · 독자 원화 {portrait_count}명 · 3D 모델 {model_count}명 · 독립 일기토 {duel_count}명", "gap":"명부 전체 플레이 통합·추가 일러스트·한글 이름·연의와 정사 구분·다른 작품 추가 인물", "next":"인물별 출처·특징을 확인하며 원화와 장수 콘텐츠 확대", "level":"첫 제작 묶음"},
         {"area":"원작 모드·튜닝", "domain":"modding", "current":"공식 도구·내장 전투 CSV·신규 캠페인 초기 전투 승리와 지도 복귀·장비 일기토 시작", "gap":"실제 저장·재실행·리플레이 재생·근접 동작과 모드 호환성·패치 효과", "next":"같은 조건의 반복·품질 후보 비교", "level":"실행 검증 진행"},
     ]
@@ -373,7 +462,7 @@ def build() -> dict:
         ("M03.1", "근접 렌더링 개선", complete031, "25,664명 표현 유지, 공간 분할·그림자 LOD"),
         ("M04", "원작 모드·튜닝 비교", "in_progress", "내장 전투 CSV, 신규 유비 캠페인 초기 전투 승리·장비 일기토 시작·지도 복귀 확인 · 저장·품질·호환성 비교 진행"),
         ("M05", "개별 전투·3D 캠페인·4장수 일기토", m05_state, "개인 이동·접촉, 연속 지형·3D 군대, 여포·관우·장비·마초와 별도 일기토 모드"),
-        ("M05.1", "병사 무기 자세·장수 전신 동작", m051_state, "여포 H 중간 개선·4장수 감상·원본 439/H 58프레임 비교 도구 확인 · 맞물리는 공방·독립 발목·가중 스키닝은 제작 중, 새 통합 영상·업로드 미완료"),
+        ("M05.1", "병사 무기 자세·장수 전신 동작", m051_state, "여포 I·세 장수 arm_v3·v4 공방·접지·새 휴대 실행본 검증 · 경직된 허리·회수 반응·가중 스키닝 개선 중, 통합 영상 촬영 후 최종 검수·비공개 업로드 대기"),
         ("후속", "접촉·공성·장수 콘텐츠·정치", "planned", "스키닝·기병 충격·성벽 경로·장수 원화와 플레이 통합·외교 확장"),
     ]:
         raw = milestones.get(key, {})
@@ -428,6 +517,16 @@ def validate(data: dict) -> None:
     for item in data["cards"]:
         if item["status"] not in states or item["domain"] not in domains:
             raise ValueError("Unknown card status or domain")
+    development = data.get("developmentEvidence")
+    if development is not None:
+        expected = {"portablePckSha256":REVIEWED_PCK_SHA256, "pairedCurveSha256":REVIEWED_CURVE_SHA256,
+                    "modelSha256":{hero:entry[1] for hero,entry in REVIEWED_MODELS.items()},
+                    "portableByMode":{"menu":76,"duel":76,"heroes":76}, "galleryChecks":127,
+                    "groundingChecks":43,"approachChecks":40,"pairedOpponentChecks":169,
+                    "pairedMatchups":12,"pairedSampleHz":240,"pairedActorPairPoses":20592,
+                    "pairedArmChecks":33,"genericArmChecks":22}
+        if any(development.get(key) != value for key,value in expected.items()):
+            raise ValueError("Public development fields differ from the reviewed snapshot contract")
     for milestone_id in ("M05", "M05.1"):
         if any(m["id"] == milestone_id and m["status"] == "complete" for m in data["milestones"]):
             proof = data.get("milestoneCompletion", {}).get(milestone_id, {})
