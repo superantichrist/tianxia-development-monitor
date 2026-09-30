@@ -110,7 +110,7 @@ def current_art_package(pck_hash: str) -> dict:
 
 def current_development_evidence() -> dict:
     """Select reviewed counts, without publishing raw reports or local paths."""
-    manifest = read_json("build/Tianxia/build-manifest.json")
+    manifest = read_json("build/Tianxia-next/build-manifest.json") if (ROOT/"build/Tianxia-next/build-manifest.json").exists() else read_json("build/Tianxia/build-manifest.json")
     if manifest.get("packaged_sha256", {}).get("Tianxia.pck") == field_review.PCK:
         return field_review.read(ROOT)
     reports = {key: reviewed_report(key) for key in REVIEWED_REPORTS}
@@ -400,7 +400,7 @@ def build() -> dict:
     ui = read_json("artifacts/ui-results.json")
     duel_sources = [read_json("artifacts/" + name) for name in (
         "duel-director-tests.json", "duel-matchups-tests.json",
-        "duel-field-arena-flow-r3.json" if development.get("currentRevision")=="field-v2" else "duel-arena-tests.json", "battle-duel-ui-tests.json")]
+        "duel-field-arena-flow-r3.json" if development.get("currentRevision")=="field-v3" else "duel-arena-tests.json", "battle-duel-ui-tests.json")]
     for result in [physics, individual_render, gpu_render, pose, ui, *portable, *duel_sources]:
         if not result or result.get("failures"):
             raise ValueError("Required current check evidence is missing or contains failures")
@@ -473,9 +473,11 @@ def build() -> dict:
         card("replay", "재현 가능한 전투·리플레이", "battle", "planned", "후속", "고정 틱·명령 기록·개별 상태 저장으로 같은 전투를 재현합니다.", "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.", "상태 해시와 저장·복원 후 결과 일치 확인"),
     ]
     battlefield_prototype = None
-    if development.get("currentRevision")=="field-v2":
+    if development.get("currentRevision")=="field-v3":
         battlefield_prototype = battle_review.read(ROOT)
-        cards.append(card("battlefield_duel", "실제 병사 전장과 상세 일기토 시제품", "battle", "in_progress", "M05.1 · 전장 연결", "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.", "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 기본 전투 앱의 연결과 고밀도·공성·돌발 장애물 검증은 미완료입니다.", "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수", "focus"))
+        cards.append(card("battlefield_duel", "실제 병사 전장과 상세 일기토 시제품", "battle", "in_progress", "M05.1 · 전장 연결", "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.", "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 보존된 시제품의 근거이며 이후 일반 전투 연결은 별도 카드에서 기록합니다. 고밀도·공성·돌발 장애물 검증은 미완료입니다.", "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수", "focus"))
+    if development.get("currentRevision")=="field-v3":
+        cards.append(card("normal_battle_duel", "일반 전투의 상세 장수 일기토 연결", "battle", "in_progress", "M05.1 · 전투 통합", "사용자 지정 전투에서 네 장수를 선택하고 일반 일기토 버튼으로 상세 모델·지면 접지·이동 공방을 시작합니다. 받아치기/회피/태세와 움직이는 카메라를 전투 HUD에 연결했습니다.", "새 독립 패키지의 실제 일반 전투에서5,184명 병사를 유지한 두 장비–여포 배치18개 검사와 GPU 표시 슬롯6개를 확인했습니다. 승부 뒤 전투는 계속되고 원래 표시를 복구합니다. 모든 대진·밀도·공성의 통합 검증이나 원작 수준의 동작 품질 완료는 아닙니다.", "일반 전투의 전 대진·입력·공성·고밀도·모델 전환과 상체/병사/말 품질 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
@@ -504,7 +506,7 @@ def build() -> dict:
             checks={name:number(checks.get(name)) for name in ("assets", "rules", "ui", "render_lod_gpu") if number(checks.get(name)) is not None},
             videoVerified=m051_complete if key == "M05.1" else m05_complete if key == "M05" else raw.get("youtube", {}).get("privacy") == "private" and raw.get("status") == "complete" if isinstance(raw.get("youtube"), dict) else False))
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-    if development.get("currentRevision")=="field-v2":
+    if development.get("currentRevision")=="field-v3":
         for row in parity:
             if row["area"]=="모델·재질·표현":
                 row.update(current="여포 field/v1f의 가중 허리·망토, 세 장수 arm_v3·원화/3D 감상",gap="원화와 3D의 미술 격차·다른 장수 의상 스키닝·지형 접지·말 골격",next="얼굴·갑옷·의상의 품질과 몸통 체중 반응 개선")
@@ -522,7 +524,7 @@ def build() -> dict:
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
         "domains":[{"id":"battle","label":"전투·물리"},{"id":"campaign","label":"캠페인"},{"id":"graphics","label":"그래픽·동작"},{"id":"performance","label":"최적화"},{"id":"modding","label":"모드·튜닝"},{"id":"tooling","label":"엔진·도구"}],
         "battlefieldPrototype":battlefield_prototype,
-        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v2" else cards, "parity":parity, "milestones":public_milestones,
+        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v3" else cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
         "originalGameRuntime":original_public,
@@ -569,7 +571,7 @@ def validate(data: dict) -> None:
                     "pairedMatchups":12,"pairedSampleHz":240,"pairedActorPairPoses":20592,
                     "pairedArmChecks":33,"genericArmChecks":22,"artPackageChecks":95,"packedPortraits":16,
                     "catalogSha256":REVIEWED_CATALOG_SHA256,"experimentalPelvisAssetsPackaged":False}
-        if development.get("currentRevision") == "field-v2":
+        if development.get("currentRevision") == "field-v3":
             field_review.validate_public(development)
         elif any(development.get(key) != value for key,value in expected.items()):
             raise ValueError("Public development fields differ from the reviewed snapshot contract")

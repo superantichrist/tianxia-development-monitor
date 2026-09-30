@@ -2,7 +2,7 @@
 import hashlib,json
 from pathlib import Path
 
-PCK="b8e824d0aeaa3dabfde538c98f4d68f02f302206d2dd8a6f0f5b9fba3c43ad86"
+PCK="b3cce294dd9004f3d00efa1718c82a5662b0239a6cc569ea8d8e815316afb5b5"
 CATALOG="37e6dc3f81db2c4c5319cdc5df4e7d8f3085ec5bf273a71f9d2cde494e259c4a"
 MODELS={
  "lubu":("assets/models/heroes/field/lubu.glb","d74c3e065720e64d6b69f20f7f117b9c7695cdaa3253739c7d73c685e09fcfd6"),
@@ -11,12 +11,14 @@ MODELS={
  "machao":("assets/models/heroes/arm_v3/machao.glb","73f44e4bfaae268721088d403735b335aa1720e340daabaaa26a9e060ef3e6ec"),
 }
 REPORTS={
- "gallery":("hero-gallery-field-r2.json","a4bd94d68f261316b19d28e0848b8b3cdc80bf45ad8b72d6d4a2f5218108ead1"),
- "pairs":("duel-field-all-pairs-r2.json","cdf28f546a045f53d2effef81b1a8f26bdea099dbcf967a673b4dfd1eef946d7"),
- "packed":("duel-field-packed-runtime-r2.json","56e48a16d983aa9f411a3c73eb8a99f5a06d73b43d0784367fb15a6f03977e2b"),
- "gpu":("duel-field-packed-gpu-r2.json","ffeebfc64a6ae2687cee2f729a41b6262a7b3d0d6b2a4bdc876ac084d9d58808"),
- "art":("field-pack-art-r3.json","a97ca1439f7ce1512dac3ede7df485996e01b65be0675c085c2ce3b33285fa89"),
- "inputs":("duel-field-cadence-validation-r1.json","79980071dd806a5b6832be02a17bf1a7ea818e36a9e62b73bd5cfd52a1fc7292"),
+ "gallery":("hero-gallery-integrated-r1.json","6ef0245b71886e600a93ce741e87d1b4d2044d73c6bd60cd893414bc1a527b1a"),
+ "pairs":("duel-integrated-all-pairs-r1.json","cdf28f546a045f53d2effef81b1a8f26bdea099dbcf967a673b4dfd1eef946d7"),
+ "packed":("duel-integrated-pack-r1.json","b2bad3796e95b2d7308548b34fad77cc970d1c33e5fd2b15977af2f651ca5d63"),
+ "gpu":("duel-integrated-pack-gpu-r1.json","9c535f949c78fe753620e0dffb411cfdc7811d1323c3ce5c79a7e215839424ec"),
+ "art":("integrated-pack-art-r1.json","20b15224f9e26ec4d5fed76fb88ca874dcc6a6c1f53eeb2fb5b51162f918ec04"),
+ "inputs":("duel-integrated-cadence-r1.json","50311a827fe4e84f2458d2414fcfd55c7122def1a1398a75e70806d1dc793a42"),
+ "main_battle":("battle-duel-integrated-packed-r1.json","59e3af764f9dd90c9d1e7a2d8c55c599dc843c4b8b37bfd71690b72023a90aaf"),
+ "main_gpu":("battle-duel-integrated-packed-gpu-r1.json","8b8978ee7908ff380d1a018f81df2d9420dbee657a68152f3fbe297f2b1b4b4e"),
 }
 CURVE="8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c"
 
@@ -28,8 +30,8 @@ def sha(path):
 
 def read(root):
  def load(name):return json.loads((root/name).read_text(encoding='utf-8-sig'))
- manifest=load('build/Tianxia/build-manifest.json')
- if manifest.get('packaged_sha256',{}).get('Tianxia.pck')!=PCK or sha(root/'build/Tianxia/Tianxia.pck')!=PCK:
+ manifest=load('build/Tianxia-next/build-manifest.json')
+ if manifest.get('packaged_sha256',{}).get('Tianxia.pck')!=PCK or sha(root/'build/Tianxia-next/Tianxia.pck')!=PCK:
   raise ValueError('Field package differs from its reviewed bytes')
  if manifest.get('source_unchanged_during_export_and_validation') is not True:raise ValueError('Field export did not preserve sources')
  for name,expected in manifest.get('source_sha256',{}).items():
@@ -70,6 +72,13 @@ def read(root):
       or row.get('max_foot_ik_error_m',1)>=.025 or row.get('max_sole_plane_error_m',1)>=.003 or row.get('max_pelvis_adjustment_m',1)>=.18
       or row.get('result',{}).get('outcome') not in ('surrender','death')):raise ValueError('Field traversal/foot evidence failed')
  packed=reports['packed'];gpu=reports['gpu'];art=reports['art']
+ main=reports['main_battle'];main_gpu=reports['main_gpu']
+ if main.get('passed')!=18 or {tuple(row['pair']) for row in main.get('cases',[])}!={(0,2),(2,0)}:raise ValueError('Normal battle integration evidence is incomplete')
+ for row in main['cases']:
+  if (row.get('agents')!=5184 or row.get('body_hits',0)==0 or row.get('contact_errors')!=[]
+      or row.get('battle_seconds_after_result',0)<1 or row.get('maximum_pelvis_adjustment_m',1)>=.18
+      or row.get('result',{}).get('outcome') not in ('surrender','death')):raise ValueError('Normal battle integration case failed')
+ if main_gpu.get('agents')!=5184 or len(main_gpu.get('readbacks',[]))!=6 or any(row.get('scale',1)!=0 for row in main_gpu['readbacks']):raise ValueError('Normal battle GPU masks were not confirmed')
  if any(r.get('pck_sha256')!=PCK for r in (packed,gpu,art)):raise ValueError('Field reports attest a different package')
  if packed.get('passed')!=19 or {tuple(row['pair']) for row in packed.get('matches',[])}!={(2,0),(0,2)}:raise ValueError('Field packed matches missing')
  if any(row.get('weighted_body_hits',0)==0 or row.get('surface_gap_m',1)>=.001 for row in packed['matches']):raise ValueError('Field must hit actual weighted body surfaces')
@@ -82,10 +91,11 @@ def read(root):
   if report.get('passed')!=92 or report.get('failures')!=[] or report.get('launch_mode')!=mode or report.get('pck_sha256')!=PCK or recorded.get('passed')!=92:raise ValueError('Field portable mode evidence changed')
   portable[mode]=92
  return {
-  'currentRevision':'field-v2','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
+  'currentRevision':'field-v3','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
   'modelRevisions':{'lubu':'field/v1f','guanyu':'arm_v3','zhangfei':'arm_v3','machao':'arm_v3'},'pairedCurveRevision':'v4 + measured Zhang/Lu contacts','pairedCurveSha256':CURVE,
   'galleryChecks':127,'galleryHeroes':4,'roamingChecks':84,'roamingMatchups':12,'packedRuntimeChecks':19,'gpuSkinReadbacks':10,
   'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
+  'normalBattleChecks':18,'normalBattleAgents':5184,'normalBattleOrders':2,'normalBattleGpuReadbacks':6,
   'inputMaximumPelvisAdjustmentCm':round(max(row['max_hip_m'] for row in inputs['cases'])*100,2),
   'maximumPelvisAdjustmentCm':round(max(row['max_pelvis_adjustment_m'] for row in pairs['cases'])*100,2),
   'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
@@ -97,10 +107,11 @@ def read(root):
  }
 
 def validate_public(data):
- expected={'currentRevision':'field-v2','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
+ expected={'currentRevision':'field-v3','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
   'modelSha256':{key:row[1] for key,row in MODELS.items()},'galleryChecks':127,'roamingChecks':84,'roamingMatchups':12,
   'packedRuntimeChecks':19,'gpuSkinReadbacks':10,'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
   'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
+  'normalBattleChecks':18,'normalBattleAgents':5184,'normalBattleOrders':2,'normalBattleGpuReadbacks':6,
   'packedPortraits':16,'catalogSha256':CATALOG,'pairedCurveSha256':CURVE,'groundingChecks':0,'approachChecks':0,
   'pairedOpponentChecks':0,'pairedArmChecks':0,'genericArmChecks':0}
  if any(data.get(key)!=value for key,value in expected.items()):raise ValueError('Public field snapshot differs from reviewed scope')

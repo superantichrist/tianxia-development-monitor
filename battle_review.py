@@ -17,7 +17,9 @@ def read(root):
  logic=reports['logic'];render=reports['render'];terrain=reports['terrain'];mask=reports['mask']
  if logic.get('passed')!=221 or len(logic.get('cases',[]))!=20 or logic.get('sources_before')!=logic.get('sources_after'):raise ValueError('Battlefield prototype logic scope is incomplete')
  for name,expected in logic['sources_before'].items():
-  if hashlib.sha256((root/name.removeprefix('res://')).read_bytes()).hexdigest()!=expected:raise ValueError('Battlefield prototype source changed')
+  path=root/name.removeprefix('res://')
+  if name.startswith('res://src/'):path=root/'artifacts/pre-full-battle-duel-build'/name.removeprefix('res://')
+  if hashlib.sha256(path.read_bytes()).hexdigest()!=expected:raise ValueError('Archived battlefield prototype source changed')
  pairs={(a,b) for a in range(4) for b in range(4) if a!=b}
  if {tuple(row['pair']) for row in logic['cases'] if row['intent']=='none'}!=pairs:raise ValueError('Battlefield prototype pairs are incomplete')
  for row in logic['cases']:

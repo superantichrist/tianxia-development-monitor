@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T20:17:20+00:00",
+  "updatedAt": "2026-09-30T21:49:23+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -369,8 +369,19 @@
       "status": "in_progress",
       "milestone": "M05.1 · 전장 연결",
       "summary": "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.",
-      "evidence": "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 기본 전투 앱의 연결과 고밀도·공성·돌발 장애물 검증은 미완료입니다.",
+      "evidence": "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 보존된 시제품의 근거이며 이후 일반 전투 연결은 별도 카드에서 기록합니다. 고밀도·공성·돌발 장애물 검증은 미완료입니다.",
       "next": "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수",
+      "priority": "focus"
+    },
+    {
+      "id": "normal_battle_duel",
+      "title": "일반 전투의 상세 장수 일기토 연결",
+      "domain": "battle",
+      "status": "in_progress",
+      "milestone": "M05.1 · 전투 통합",
+      "summary": "사용자 지정 전투에서 네 장수를 선택하고 일반 일기토 버튼으로 상세 모델·지면 접지·이동 공방을 시작합니다. 받아치기/회피/태세와 움직이는 카메라를 전투 HUD에 연결했습니다.",
+      "evidence": "새 독립 패키지의 실제 일반 전투에서5,184명 병사를 유지한 두 장비–여포 배치18개 검사와 GPU 표시 슬롯6개를 확인했습니다. 승부 뒤 전투는 계속되고 원래 표시를 복구합니다. 모든 대진·밀도·공성의 통합 검증이나 원작 수준의 동작 품질 완료는 아닙니다.",
+      "next": "일반 전투의 전 대진·입력·공성·고밀도·모델 전환과 상체/병사/말 품질 검수",
       "priority": "focus"
     }
   ],
@@ -589,8 +600,8 @@
     "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
   },
   "developmentEvidence": {
-    "currentRevision": "field-v2",
-    "portablePckSha256": "b8e824d0aeaa3dabfde538c98f4d68f02f302206d2dd8a6f0f5b9fba3c43ad86",
+    "currentRevision": "field-v3",
+    "portablePckSha256": "b3cce294dd9004f3d00efa1718c82a5662b0239a6cc569ea8d8e815316afb5b5",
     "portableByMode": {
       "menu": 92,
       "duel": 92,
@@ -619,6 +630,10 @@
     "cadenceInputChecks": 489,
     "cadenceInputMatches": 48,
     "cadenceRevision": "r3",
+    "normalBattleChecks": 18,
+    "normalBattleAgents": 5184,
+    "normalBattleOrders": 2,
+    "normalBattleGpuReadbacks": 6,
     "inputMaximumPelvisAdjustmentCm": 17.26,
     "maximumPelvisAdjustmentCm": 11.5,
     "weightedHeroes": [
