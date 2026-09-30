@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-28T10:52:37+00:00",
+  "updatedAt": "2026-09-30T16:54:04+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -108,24 +108,24 @@
     },
     {
       "id": "duel_mode",
-      "title": "별도로 실행하는 일기토 모드",
+      "title": "전장에서 이동하는 독립 일기토",
       "domain": "battle",
       "status": "complete",
       "milestone": "M05",
-      "summary": "장수 선택·두 명의 독립 교전·태세 전환·타이밍 방어·승패와 재대결을 연결했습니다.",
-      "evidence": "현재 I/arm_v3·v4 빌드의 메뉴 76개·일기토 76개·장수 감상 76개, 합계 228개 휴대 실행 검사를 통과했습니다. M05 완료 영상은 이전 빌드의 기록이며 M05.1 완료를 뜻하지 않습니다.",
-      "next": "장수별 무기 접촉·전용 동작과 연출 확장",
+      "summary": "기본 일기토를 이동·회전하는 교전 프레임과 각자의 지지 발을 사용하는 전장 모드로 연결했습니다.",
+      "evidence": "메뉴·일기토·감상 각92개 독립 실행 검사. 작업 폴더 밖의 실제 PCK 두 경기19개에서 자연 승부·이동·가중 복부 명중·재대결을 확인했습니다. M05 완료 영상과 현재 제작 중인 개선을 구분합니다.",
+      "next": "공방 연결 리듬과 다른 공격 방향의 실제 무기 충돌 확장",
       "priority": "focus"
     },
     {
       "id": "hero_models",
-      "title": "여포 I와 세 장수의 상완·발목 개선",
+      "title": "여포의 가중 허리·망토와 장수 모델",
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "여포 I와 관우·장비·마초 arm_v3를 실제 명단과 새 실행본에 채택했습니다. 독립 발목을 유지하면서 어깨·상완 연결을 수정했습니다.",
-      "evidence": "현재 모델의 모든 팔 정점 표본 검사: 공방 33개·일반 동작 22개 통과. 한 축 몸통 envelope이며 어깨 접합부 상단 30%는 제외합니다. 원화와 3D의 얼굴·갑주·피부 격차, 강체 관절과 가중 스키닝 과제는 남습니다.",
-      "next": "장수의 위용·얼굴 식별·재질을 원화와 맞추고 골반·흉곽·옷의 변형 개선",
+      "summary": "여포 field/v1f의 골반·복부·망토가 따로 움직이고, 관우·장비·마초는 arm_v3를 유지합니다.",
+      "evidence": "실제 패키지 GPU에서 복부·망토 스킨을10번 읽어 CPU 좌표와 비교했습니다. 이전 모델의 팔 정점 검사 수치를 이 새 모델의 검증으로 재사용하지 않습니다. 얼굴·갑주·옷과 원화의 미술 격차는 남습니다.",
+      "next": "전체 장수의 의상 스키닝과 모델·재질 품질 개선",
       "priority": "focus"
     },
     {
@@ -135,7 +135,7 @@
       "status": "complete",
       "milestone": "M05.1 · 감상 도구",
       "summary": "여포·관우·장비·마초 원화와 실제 3D 모델을 나란히 보고 회전·확대·전신·얼굴·대기·공격·방어를 선택하는 별도 감상 모드를 연결했습니다.",
-      "evidence": "현재 네 모델로 감상 기능 127개 headless 검사 통과. 동작별 구도, 얼굴 보기 무기 숨김·복구와 수동 조작 보존을 검사했습니다. 모델 품질이나 실제 일기토의 자연스러움 완료 판정은 아닙니다.",
+      "evidence": "현재 모델 감상127개 회귀 검사. 원화와 같은 플레이 모델을 읽으며 변형된 허리·망토의 실제 좌표로 구도를 맞춥니다. 시각 품질이나 원작 동등성 판정은 아닙니다.",
       "next": "모델·클립 개선 때 얼굴·전신 구도와 실제 화면 동작 감상 재검수",
       "priority": "normal"
     },
@@ -218,24 +218,24 @@
     },
     {
       "id": "hero_animation",
-      "title": "장수마다 다른 전신 공격",
+      "title": "발걸음으로 이어지는 전신 공방",
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "장수별 공격과 양손 IK를 유지하며 v4 공방에서 장비·마초의 바깥 진입, 관우·장비의 낮은 후속 궤적을 연결했습니다.",
-      "evidence": "실제 GPU 구간을 프레임 단위로 비교했습니다. 준비·회수의 긴 멈춤, 단단한 허리 회전과 약한 반발·체중 전달은 아직 보입니다. M05.1 통합 영상의 로컬 검수는 완료했고 비공개 업로드를 기다립니다. 새 네 장수 원화는 이 영상 촬영 이후 추가했습니다.",
-      "next": "두 무기가 실제 맞닿는 저작 접점, 받아내는 체중과 연속적인 회수 동작",
+      "summary": "공격 준비 끝에 뒤쪽 발이 늦던 문제를 고쳐, 격돌 전에 지지 발을 확보하고 회수 발걸음으로 이어갑니다.",
+      "evidence": "네 장수12개 순서 조합84개 이동·접지·자연 승부 검사. 최대 골반 보정은 약13.93cm로 줄었고, 이 제작 기준의 통과를 자연스러움 점수로 사용하지 않습니다.",
+      "next": "긴 버팀 자세·상체 경직과 공격 교대의 멈춤 개선",
       "priority": "focus"
     },
     {
       "id": "paired_motion",
-      "title": "두 장수의 v4 공방과 실제 바닥 접지",
+      "title": "이동 공방의 접지와 변형된 몸통 타격",
       "domain": "battle",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "두 장수의 공통 시간축, 접근→준비 자세 연결과 모델별 실제 밑창 높이를 경기장 바닥에 맞췄습니다. 장병기의 이른 몸통 진입과 방어 후 회수 경로를 수정했습니다.",
-      "evidence": "현 명단 12개 공격 방향 × 4결과, 240Hz·20,592개 두 배우 자세에서 상대 검사 169개 통과. 실제 접지 43개·접근 연결 40개 통과. 유한 표본과 한 축 envelope 검사이며 연속 무관통·정확한 충돌 시각·자연스러운 전투의 보장은 아닙니다.",
-      "next": "접점과 양쪽 반응을 함께 저작하고 경직된 허리·회수 멈춤·체중 이동 개선",
+      "summary": "화면·시뮬레이션·무기 조회에 같은 이동 프레임을 쓰고, 갑옷과 실제 스킨 복부를 타격 표면에 포함했습니다.",
+      "evidence": "현재 표면 타격은 장비→여포 한 방향입니다. 실제 패키지의 두 배치에서 변형 복부에 각5번 명중했고 자연 종료를 확인했습니다. 12개 이동 조합 검사는 모든 방향의 정밀 충돌 검증이 아닙니다.",
+      "next": "다른 장수·반대 공격의 표면 접촉, 연속 충돌과 체중 반응 확장",
       "priority": "focus"
     },
     {
@@ -278,7 +278,7 @@
       "status": "in_progress",
       "milestone": "콘텐츠 확장",
       "summary": "여포·관우·장비·마초·조운·황충·전위·조조·유비·손권·제갈량·주유에 손책·장료·초선·여몽을 더해 16명의 독자 원화를 제작했습니다.",
-      "evidence": "16개 서로 다른 1,024×1,536 PNG를 검토하고 원본·게임·공개 갤러리의 동일성을 확인했습니다. 새 실행본에서 원화 16장 로딩과 실험 자산 제외를 95개 조건으로 확인했습니다. 새 네 그림은 기존 M05.1 영상에 없으며 3D 모델·플레이 가능 수는 여전히 4명·4명입니다.",
+      "evidence": "서로 다른16개 원화를 검수했으며 새 패키지에서16장 모두1024×1536 텍스처로 읽었습니다. 원화16명과 모델·플레이4명은 구분합니다. 새 네 원화는 보존된 이전 마일스톤 영상 이후 추가됐습니다.",
       "next": "새 장수의 3D·플레이 통합과 다음 원화 묶음 제작",
       "priority": "focus"
     },
@@ -401,9 +401,9 @@
     {
       "area": "모델·재질·표현",
       "domain": "graphics",
-      "current": "여포 I·관우/장비/마초 arm_v3 채택, 독립 발목과 상완 연결 개선·네 장수 원화/3D 감상",
-      "gap": "원화와 3D의 미술 격차·가중 스키닝·경사 지형 접지·말 골격·의상 품질",
-      "next": "장수의 위용·얼굴·갑옷 재질과 골반/흉곽 변형 개선",
+      "current": "여포 field/v1f의 가중 허리·망토, 세 장수 arm_v3·원화/3D 감상",
+      "gap": "원화와 3D의 미술 격차·다른 장수 의상 스키닝·지형 접지·말 골격",
+      "next": "얼굴·갑옷·의상의 품질과 몸통 체중 반응 개선",
       "level": "현재 모델 통합 · 품질 제작 중"
     },
     {
@@ -417,9 +417,9 @@
     {
       "area": "장군 일기토",
       "domain": "battle",
-      "current": "독립 4장수 모드·양손 IK·v4 두 인물 공방·접근 연결·실제 평면 접지·HP와 결과",
-      "gap": "실제 무기끼리 접점·체중과 반발·경직된 허리·회수 멈춤·연속 충돌·가중 스키닝",
-      "next": "맞닿는 두 무기와 양쪽이 힘을 받는 공방, 연속적인 회수 저작",
+      "current": "기본4장수 이동 전장 일기토·세계 지지 발·HP/자연 승부·장비→여포 변형 표면 타격",
+      "gap": "다른 방향 정밀 타격·더 다양한 공방·몸통 경직·연속 충돌·전장 지형/병사 회피",
+      "next": "공격 준비/회수 멈춤과 공방 교대 리듬 개선",
       "level": "M05 기반 완료 · M05.1 개선 중"
     },
     {
@@ -485,7 +485,7 @@
       "id": "M05.1",
       "title": "병사 무기 자세·장수 전신 동작",
       "status": "in_progress",
-      "description": "여포 I·세 장수 arm_v3·v4 공방·접지 검증 · 경직된 허리·회수 반응·가중 스키닝 개선 중. 통합 영상 로컬 검수 완료·비공개 업로드 대기. 새 네 원화는 해당 영상 이후 추가",
+      "description": "이동하는 기본 일기토·여포 가중 허리/망토·실제 변형 복부 타격과 새 실행본 검증. 긴 버팀 자세·다른 방향 충돌·의상 품질 제작 중. 보존 통합 영상의 비공개 업로드는 대기 중이며 새 실행본과 촬영 시점을 구분합니다.",
       "checks": {},
       "videoVerified": false
     },
@@ -549,8 +549,8 @@
     "individualRenderHeadless": 584,
     "individualRenderGpu": 776,
     "individualRenderGpuVerified": true,
-    "duelHeadless": 210,
-    "portableHeadless": 228,
+    "duelHeadless": 211,
+    "portableHeadless": 276,
     "heroPoseChecks": 24,
     "heroPoseSamples": 1836,
     "uiGpu": 19,
@@ -564,48 +564,58 @@
     "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
   },
   "developmentEvidence": {
-    "artPackageChecks": 95,
-    "packedPortraits": 16,
-    "catalogSha256": "37e6dc3f81db2c4c5319cdc5df4e7d8f3085ec5bf273a71f9d2cde494e259c4a",
-    "artRevision": "romance_v2",
-    "experimentalPelvisAssetsPackaged": false,
-    "artCaptureScope": "손책·장료·초선·여몽 원화는 기존 M05.1 영상 촬영 이후 추가했습니다. 새 네 장수의 3D 모델·플레이 통합은 미완료입니다.",
-    "galleryChecks": 127,
-    "galleryHeroes": 4,
+    "currentRevision": "field-v1",
+    "portablePckSha256": "e7812214f65785252a8bd0eda34e83f0205bf2b227ad6a4ccac5a6ac4e7853e9",
     "portableByMode": {
-      "menu": 76,
-      "duel": 76,
-      "heroes": 76
-    },
-    "portablePckSha256": "9fd7a747b7e6da7abc155170f7e4ff3f7ba43dfbcd6c114ba99e808079adc4db",
-    "modelRevisions": {
-      "lubu": "I",
-      "guanyu": "arm_v3",
-      "zhangfei": "arm_v3",
-      "machao": "arm_v3"
+      "menu": 92,
+      "duel": 92,
+      "heroes": 92
     },
     "modelSha256": {
-      "lubu": "9a5ca5628553fc95ea358a4f078c0faffcdcd7346a120c789aaa85c9fc7f1cfb",
+      "lubu": "d74c3e065720e64d6b69f20f7f117b9c7695cdaa3253739c7d73c685e09fcfd6",
       "guanyu": "53d7d92dfba7d3a40afa2fc41118d5c1233d176d1355329b1a5a64d14af7e708",
       "zhangfei": "08a14d403c09da4d43bd3794257f043c9d9e9252150c8e57d5ba2a9e01056592",
       "machao": "73f44e4bfaae268721088d403735b335aa1720e340daabaaa26a9e060ef3e6ec"
     },
-    "pairedCurveRevision": "v4",
+    "modelRevisions": {
+      "lubu": "field/v1f",
+      "guanyu": "arm_v3",
+      "zhangfei": "arm_v3",
+      "machao": "arm_v3"
+    },
+    "pairedCurveRevision": "v4 + measured Zhang/Lu contacts",
     "pairedCurveSha256": "8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c",
-    "groundingChecks": 43,
-    "approachChecks": 40,
-    "pairedOpponentChecks": 169,
+    "galleryChecks": 127,
+    "galleryHeroes": 4,
+    "roamingChecks": 84,
+    "roamingMatchups": 12,
+    "packedRuntimeChecks": 19,
+    "gpuSkinReadbacks": 10,
+    "maximumPelvisAdjustmentCm": 13.93,
+    "weightedHeroes": [
+      "lubu"
+    ],
+    "measuredContactDirections": [
+      "zhangfei->lubu"
+    ],
+    "groundingChecks": 0,
+    "approachChecks": 0,
+    "pairedOpponentChecks": 0,
     "pairedMatchups": 12,
-    "pairedSampleHz": 240,
-    "pairedActorPairPoses": 20592,
-    "pairedArmChecks": 33,
-    "genericArmChecks": 22,
+    "pairedSampleHz": 60,
+    "pairedActorPairPoses": 17256,
+    "pairedArmChecks": 0,
+    "genericArmChecks": 0,
+    "artPackageChecks": 16,
+    "packedPortraits": 16,
+    "catalogSha256": "37e6dc3f81db2c4c5319cdc5df4e7d8f3085ec5bf273a71f9d2cde494e259c4a",
+    "experimentalPelvisAssetsPackaged": false,
     "referenceVideos": 2,
     "referenceFrames": 439,
     "comparisonFrames": 58,
     "referenceViewerUiChecks": 11,
-    "referenceSnapshot": "과거 H 첫 공격 비교 도구의 검증 기록",
-    "scope": "현재 I/arm_v3 모델·v4 공방과 원화 16장을 포함한 휴대 실행본입니다. 기존 여섯 동작/형상 보고서의 코드·곡선·모델은 동일합니다. 한 축 envelope와 어깨 접합부 제외 조건이 있으며 연속 충돌·자연스러움·M05.1 완료를 뜻하지 않습니다. 새 네 원화는 기존 영상 이후 추가됐고 pelvis/짝 공방 실험 후보는 배포하지 않았습니다. 참고 뷰어는 과거 H 스냅샷입니다."
+    "referenceSnapshot": "과거 H 참고 비교 기록",
+    "scope": "이동하는 기본 일기토와 여포 가중 허리·망토를 연결한 실행본. 12조합 이동/접지와 실제 패키지·GPU를 검증했습니다. 표면 타격은 장비→여포이며 다른 방향의 정확한 무기 충돌, 전체 장수 스키닝·자유 지형/병사 회피·공방 자연스러움은 미완료입니다. 과거 I/arm_v3의169개 envelope 및 팔 정점 검사를 이 새 명단의 통과로 재사용하지 않습니다."
   },
   "officerCatalog": {
     "referenceEntries": 1000,

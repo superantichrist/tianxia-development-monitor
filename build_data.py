@@ -12,6 +12,7 @@ import json
 import math
 import re
 from pathlib import Path
+import field_review
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -108,6 +109,9 @@ def current_art_package(pck_hash: str) -> dict:
 
 def current_development_evidence() -> dict:
     """Select reviewed counts, without publishing raw reports or local paths."""
+    manifest = read_json("build/Tianxia/build-manifest.json")
+    if manifest.get("packaged_sha256", {}).get("Tianxia.pck") == field_review.PCK:
+        return field_review.read(ROOT)
     reports = {key: reviewed_report(key) for key in REVIEWED_REPORTS}
     gallery = reports["gallery"]
     heroes = gallery.get("heroes", [])
@@ -395,7 +399,7 @@ def build() -> dict:
     ui = read_json("artifacts/ui-results.json")
     duel_sources = [read_json("artifacts/" + name) for name in (
         "duel-director-tests.json", "duel-matchups-tests.json",
-        "duel-arena-tests.json", "battle-duel-ui-tests.json")]
+        "duel-field-arena-flow-r2.json" if development.get("currentRevision")=="field-v1" else "duel-arena-tests.json", "battle-duel-ui-tests.json")]
     for result in [physics, individual_render, gpu_render, pose, ui, *portable, *duel_sources]:
         if not result or result.get("failures"):
             raise ValueError("Required current check evidence is missing or contains failures")
@@ -495,6 +499,14 @@ def build() -> dict:
             checks={name:number(checks.get(name)) for name in ("assets", "rules", "ui", "render_lod_gpu") if number(checks.get(name)) is not None},
             videoVerified=m051_complete if key == "M05.1" else m05_complete if key == "M05" else raw.get("youtube", {}).get("privacy") == "private" and raw.get("status") == "complete" if isinstance(raw.get("youtube"), dict) else False))
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    if development.get("currentRevision")=="field-v1":
+        for row in parity:
+            if row["area"]=="모델·재질·표현":
+                row.update(current="여포 field/v1f의 가중 허리·망토, 세 장수 arm_v3·원화/3D 감상",gap="원화와 3D의 미술 격차·다른 장수 의상 스키닝·지형 접지·말 골격",next="얼굴·갑옷·의상의 품질과 몸통 체중 반응 개선")
+            elif row["area"]=="장군 일기토":
+                row.update(current="기본4장수 이동 전장 일기토·세계 지지 발·HP/자연 승부·장비→여포 변형 표면 타격",gap="다른 방향 정밀 타격·더 다양한 공방·몸통 경직·연속 충돌·전장 지형/병사 회피",next="공격 준비/회수 멈춤과 공방 교대 리듬 개선")
+        for row in public_milestones:
+            if row["id"]=="M05.1":row["description"]="이동하는 기본 일기토·여포 가중 허리/망토·실제 변형 복부 타격과 새 실행본 검증. 긴 버팀 자세·다른 방향 충돌·의상 품질 제작 중. 보존 통합 영상의 비공개 업로드는 대기 중이며 새 실행본과 촬영 시점을 구분합니다."
     return {
         "schemaVersion":1,
         "updatedAt":now,
@@ -504,7 +516,7 @@ def build() -> dict:
                     "boundary":"현재는 독립 개발 중인 전략 게임입니다. 항목별 구현과 검증을 기록하며 전체 동등성이나 완성률을 주장하지 않습니다."},
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
         "domains":[{"id":"battle","label":"전투·물리"},{"id":"campaign","label":"캠페인"},{"id":"graphics","label":"그래픽·동작"},{"id":"performance","label":"최적화"},{"id":"modding","label":"모드·튜닝"},{"id":"tooling","label":"엔진·도구"}],
-        "cards":cards, "parity":parity, "milestones":public_milestones,
+        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v1" else cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
         "originalGameRuntime":original_public,
@@ -550,7 +562,9 @@ def validate(data: dict) -> None:
                     "pairedMatchups":12,"pairedSampleHz":240,"pairedActorPairPoses":20592,
                     "pairedArmChecks":33,"genericArmChecks":22,"artPackageChecks":95,"packedPortraits":16,
                     "catalogSha256":REVIEWED_CATALOG_SHA256,"experimentalPelvisAssetsPackaged":False}
-        if any(development.get(key) != value for key,value in expected.items()):
+        if development.get("currentRevision") == "field-v1":
+            field_review.validate_public(development)
+        elif any(development.get(key) != value for key,value in expected.items()):
             raise ValueError("Public development fields differ from the reviewed snapshot contract")
         catalog = data.get("officerCatalog")
         if catalog is not None and (catalog.get("illustrations") != 16 or catalog.get("models") != 4
