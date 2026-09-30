@@ -13,6 +13,7 @@ import math
 import re
 from pathlib import Path
 import field_review
+import battle_review
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -471,6 +472,10 @@ def build() -> dict:
         card("engine", "엔진·도구·모드 선택 재검토", "tooling", "in_progress", "매 단계", "검증된 Godot 실행을 유지하며 Blender 두 인물 제작·공유 클립 도구를 선택했습니다. Unreal·Unity·전용 엔진과 원작 모드 경로도 마일스톤마다 검토합니다.", "현재 그래픽과 공방의 격차를 다른 엔진 이전이 실제로 해소했다는 비교 증거는 없습니다. 참고 목록의 TPU모드 표기는 보존하지만 원작 무모드·단일 모드의 통제 A/B 비교는 아직 미검증입니다.", "동일 장수·동작·조명 장면의 표현과 제작 비용, 모드 호환·품질 효과를 확인"),
         card("replay", "재현 가능한 전투·리플레이", "battle", "planned", "후속", "고정 틱·명령 기록·개별 상태 저장으로 같은 전투를 재현합니다.", "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.", "상태 해시와 저장·복원 후 결과 일치 확인"),
     ]
+    battlefield_prototype = None
+    if development.get("currentRevision")=="field-v2":
+        battlefield_prototype = battle_review.read(ROOT)
+        cards.append(card("battlefield_duel", "실제 병사 전장과 상세 일기토 시제품", "battle", "in_progress", "M05.1 · 전장 연결", "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.", "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 기본 전투 앱의 연결과 고밀도·공성·돌발 장애물 검증은 미완료입니다.", "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
@@ -516,6 +521,7 @@ def build() -> dict:
                     "boundary":"현재는 독립 개발 중인 전략 게임입니다. 항목별 구현과 검증을 기록하며 전체 동등성이나 완성률을 주장하지 않습니다."},
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
         "domains":[{"id":"battle","label":"전투·물리"},{"id":"campaign","label":"캠페인"},{"id":"graphics","label":"그래픽·동작"},{"id":"performance","label":"최적화"},{"id":"modding","label":"모드·튜닝"},{"id":"tooling","label":"엔진·도구"}],
+        "battlefieldPrototype":battlefield_prototype,
         "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v2" else cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
@@ -534,6 +540,7 @@ def build() -> dict:
 
 
 def validate(data: dict) -> None:
+    if data.get("battlefieldPrototype") is not None: battle_review.validate_public(data["battlefieldPrototype"])
     export_check = json.loads(json.dumps(data, ensure_ascii=False))
     for source in export_check.get("sources", []):
         if "url" in source:

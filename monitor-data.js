@@ -1,6 +1,6 @@
 window.MONITOR_DATA = {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T18:48:55+00:00",
+  "updatedAt": "2026-09-30T20:17:20+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -61,6 +61,20 @@ window.MONITOR_DATA = {
       "label": "엔진·도구"
     }
   ],
+  "battlefieldPrototype": {
+    "status": "prototype",
+    "productionIntegrated": false,
+    "agents": 320,
+    "matches": 20,
+    "checks": 221,
+    "orderedPairs": 12,
+    "gpuInstanceReadbacks": 12,
+    "gpuSkinReadbacks": 18,
+    "terrainComparisonPoints": 256,
+    "measuredContactDirections": [
+      "zhangfei->lubu"
+    ]
+  },
   "cards": [
     {
       "id": "individual",
@@ -347,6 +361,17 @@ window.MONITOR_DATA = {
       "evidence": "동일 장비의 첫 모듈 재현 검사와 완성된 리플레이 제품을 구분합니다.",
       "next": "상태 해시와 저장·복원 후 결과 일치 확인",
       "priority": "normal"
+    },
+    {
+      "id": "battlefield_duel",
+      "title": "실제 병사 전장과 상세 일기토 시제품",
+      "domain": "battle",
+      "status": "in_progress",
+      "milestone": "M05.1 · 전장 연결",
+      "summary": "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.",
+      "evidence": "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 기본 전투 앱의 연결과 고밀도·공성·돌발 장애물 검증은 미완료입니다.",
+      "next": "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수",
+      "priority": "focus"
     }
   ],
   "parity": [
