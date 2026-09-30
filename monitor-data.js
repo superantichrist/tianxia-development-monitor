@@ -1,6 +1,6 @@
 window.MONITOR_DATA = {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T16:54:04+00:00",
+  "updatedAt": "2026-09-30T18:48:55+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -222,9 +222,9 @@ window.MONITOR_DATA = {
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "공격 준비 끝에 뒤쪽 발이 늦던 문제를 고쳐, 격돌 전에 지지 발을 확보하고 회수 발걸음으로 이어갑니다.",
-      "evidence": "네 장수12개 순서 조합84개 이동·접지·자연 승부 검사. 최대 골반 보정은 약13.93cm로 줄었고, 이 제작 기준의 통과를 자연스러움 점수로 사용하지 않습니다.",
-      "next": "긴 버팀 자세·상체 경직과 공격 교대의 멈춤 개선",
+      "summary": "준비·회수의 멈춤을 줄이고, 회피 뒤 지지 발을 회수해 다음 공격으로 연결했습니다.",
+      "evidence": "네 장수12조합84개 검사와 양 배치·4개 표시 FPS의 입력48경기489개 검사를 통과했습니다. 일반 대결 최대 골반 보정11.51cm, 회피 포함17.26cm. 준비·회수 시간을 줄이고 회피 뒤 발을 회수합니다. 자연스러움 완성 판정은 아닙니다.",
+      "next": "상체 버팀과 갑주 경직 개선, 다양한 반격·거리 회복 저작",
       "priority": "focus"
     },
     {
@@ -564,8 +564,8 @@ window.MONITOR_DATA = {
     "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
   },
   "developmentEvidence": {
-    "currentRevision": "field-v1",
-    "portablePckSha256": "e7812214f65785252a8bd0eda34e83f0205bf2b227ad6a4ccac5a6ac4e7853e9",
+    "currentRevision": "field-v2",
+    "portablePckSha256": "b8e824d0aeaa3dabfde538c98f4d68f02f302206d2dd8a6f0f5b9fba3c43ad86",
     "portableByMode": {
       "menu": 92,
       "duel": 92,
@@ -591,7 +591,11 @@ window.MONITOR_DATA = {
     "roamingMatchups": 12,
     "packedRuntimeChecks": 19,
     "gpuSkinReadbacks": 10,
-    "maximumPelvisAdjustmentCm": 13.93,
+    "cadenceInputChecks": 489,
+    "cadenceInputMatches": 48,
+    "cadenceRevision": "r3",
+    "inputMaximumPelvisAdjustmentCm": 17.26,
+    "maximumPelvisAdjustmentCm": 11.5,
     "weightedHeroes": [
       "lubu"
     ],
@@ -603,7 +607,7 @@ window.MONITOR_DATA = {
     "pairedOpponentChecks": 0,
     "pairedMatchups": 12,
     "pairedSampleHz": 60,
-    "pairedActorPairPoses": 17256,
+    "pairedActorPairPoses": 15252,
     "pairedArmChecks": 0,
     "genericArmChecks": 0,
     "artPackageChecks": 16,

@@ -2,7 +2,7 @@
 import hashlib,json
 from pathlib import Path
 
-PCK="e7812214f65785252a8bd0eda34e83f0205bf2b227ad6a4ccac5a6ac4e7853e9"
+PCK="b8e824d0aeaa3dabfde538c98f4d68f02f302206d2dd8a6f0f5b9fba3c43ad86"
 CATALOG="37e6dc3f81db2c4c5319cdc5df4e7d8f3085ec5bf273a71f9d2cde494e259c4a"
 MODELS={
  "lubu":("assets/models/heroes/field/lubu.glb","d74c3e065720e64d6b69f20f7f117b9c7695cdaa3253739c7d73c685e09fcfd6"),
@@ -12,10 +12,11 @@ MODELS={
 }
 REPORTS={
  "gallery":("hero-gallery-field-r2.json","a4bd94d68f261316b19d28e0848b8b3cdc80bf45ad8b72d6d4a2f5218108ead1"),
- "pairs":("duel-field-all-pairs-r1.json","298677f308d8f89514a65239f6ec844b75797555b81f73f7e97abc89e1385fcb"),
- "packed":("duel-field-packed-runtime-r1.json","30da6fbb5c232fd3b205236ca22ccd51ff3cf2647f25a6b7ba9061b41ca4bb22"),
- "gpu":("duel-field-packed-gpu-r1.json","2beb37c32df0016c9dae3fd940698080140f22d549bfc1a1756eafd2a3c5b77a"),
- "art":("field-pack-art-r2.json","565c1a01a110e096ba9ef0da7adffaf282ab50ace6bbdfea0821cc919dcbf933"),
+ "pairs":("duel-field-all-pairs-r2.json","cdf28f546a045f53d2effef81b1a8f26bdea099dbcf967a673b4dfd1eef946d7"),
+ "packed":("duel-field-packed-runtime-r2.json","56e48a16d983aa9f411a3c73eb8a99f5a06d73b43d0784367fb15a6f03977e2b"),
+ "gpu":("duel-field-packed-gpu-r2.json","ffeebfc64a6ae2687cee2f729a41b6262a7b3d0d6b2a4bdc876ac084d9d58808"),
+ "art":("field-pack-art-r3.json","a97ca1439f7ce1512dac3ede7df485996e01b65be0675c085c2ce3b33285fa89"),
+ "inputs":("duel-field-cadence-validation-r1.json","79980071dd806a5b6832be02a17bf1a7ea818e36a9e62b73bd5cfd52a1fc7292"),
 }
 CURVE="8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c"
 
@@ -48,6 +49,19 @@ def read(root):
  for hero in gallery['heroes']:
   name,expected=MODELS[hero['hero']]
   if hero.get('model')!='res://'+name or hero.get('model_sha256')!=expected or hero.get('authored') is not True:raise ValueError('Field gallery model differs from runtime')
+ for name,expected in gallery['sources_before'].items():
+  if sha(root/name.removeprefix('res://'))!=expected:raise ValueError('Reused gallery dependency changed: '+name)
+ inputs=reports['inputs']
+ if (inputs.get('passed')!=489 or len(inputs.get('cases',[]))!=48 or inputs.get('baseline_runtime') is not True
+     or inputs.get('case_filter')!='' or inputs.get('sources_before')!=inputs.get('sources_after')):raise ValueError('Field input suite is incomplete')
+ expected_inputs={f'slot{s}/{fps}fps/{intent}' for s in (0,1) for fps in (15,30,60,144) for intent in ('none','parry','dodge','guarded','skip','aggressive')}
+ if {row.get('label') for row in inputs['cases']}!=expected_inputs:raise ValueError('Field input cases differ from review')
+ for row in inputs['cases']:
+  if (row.get('errors')!=[] or row.get('bad_contacts')!=0 or row.get('hp_prefix_errors')!=0 or row.get('effect_prefix_errors')!=0
+      or row.get('duplicate_resolutions')!=0 or row.get('max_hip_m',1)>.18 or row.get('max_foot_error_m',1)>.025
+      or row.get('max_planted_sole_plane_error_m',1)>.003):raise ValueError('Field input/foot evidence failed')
+ for name,expected in inputs['sources_before'].items():
+  if sha(root/name.removeprefix('res://'))!=expected:raise ValueError('Reviewed input producer changed: '+name)
  pairs=reports['pairs']
  expected_pairs={a+'->'+b for a in MODELS for b in MODELS if a!=b}
  if pairs.get('passed')!=84 or pairs.get('weighted_lubu') is not True or {row.get('pair') for row in pairs.get('cases',[])}!=expected_pairs:raise ValueError('Field needs all 12 ordered hero pairs')
@@ -68,9 +82,11 @@ def read(root):
   if report.get('passed')!=92 or report.get('failures')!=[] or report.get('launch_mode')!=mode or report.get('pck_sha256')!=PCK or recorded.get('passed')!=92:raise ValueError('Field portable mode evidence changed')
   portable[mode]=92
  return {
-  'currentRevision':'field-v1','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
+  'currentRevision':'field-v2','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
   'modelRevisions':{'lubu':'field/v1f','guanyu':'arm_v3','zhangfei':'arm_v3','machao':'arm_v3'},'pairedCurveRevision':'v4 + measured Zhang/Lu contacts','pairedCurveSha256':CURVE,
   'galleryChecks':127,'galleryHeroes':4,'roamingChecks':84,'roamingMatchups':12,'packedRuntimeChecks':19,'gpuSkinReadbacks':10,
+  'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
+  'inputMaximumPelvisAdjustmentCm':round(max(row['max_hip_m'] for row in inputs['cases'])*100,2),
   'maximumPelvisAdjustmentCm':round(max(row['max_pelvis_adjustment_m'] for row in pairs['cases'])*100,2),
   'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
   'groundingChecks':0,'approachChecks':0,'pairedOpponentChecks':0,'pairedMatchups':12,'pairedSampleHz':60,
@@ -81,9 +97,10 @@ def read(root):
  }
 
 def validate_public(data):
- expected={'currentRevision':'field-v1','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
+ expected={'currentRevision':'field-v2','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
   'modelSha256':{key:row[1] for key,row in MODELS.items()},'galleryChecks':127,'roamingChecks':84,'roamingMatchups':12,
   'packedRuntimeChecks':19,'gpuSkinReadbacks':10,'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
+  'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
   'packedPortraits':16,'catalogSha256':CATALOG,'pairedCurveSha256':CURVE,'groundingChecks':0,'approachChecks':0,
   'pairedOpponentChecks':0,'pairedArmChecks':0,'genericArmChecks':0}
  if any(data.get(key)!=value for key,value in expected.items()):raise ValueError('Public field snapshot differs from reviewed scope')
@@ -98,9 +115,9 @@ def update_cards(cards):
  update('hero_models','여포의 가중 허리·망토와 장수 모델','여포 field/v1f의 골반·복부·망토가 따로 움직이고, 관우·장비·마초는 arm_v3를 유지합니다.',
   '실제 패키지 GPU에서 복부·망토 스킨을10번 읽어 CPU 좌표와 비교했습니다. 이전 모델의 팔 정점 검사 수치를 이 새 모델의 검증으로 재사용하지 않습니다. 얼굴·갑주·옷과 원화의 미술 격차는 남습니다.',
   '전체 장수의 의상 스키닝과 모델·재질 품질 개선')
- update('hero_animation','발걸음으로 이어지는 전신 공방','공격 준비 끝에 뒤쪽 발이 늦던 문제를 고쳐, 격돌 전에 지지 발을 확보하고 회수 발걸음으로 이어갑니다.',
-  '네 장수12개 순서 조합84개 이동·접지·자연 승부 검사. 최대 골반 보정은 약13.93cm로 줄었고, 이 제작 기준의 통과를 자연스러움 점수로 사용하지 않습니다.',
-  '긴 버팀 자세·상체 경직과 공격 교대의 멈춤 개선')
+ update('hero_animation','발걸음으로 이어지는 전신 공방','준비·회수의 멈춤을 줄이고, 회피 뒤 지지 발을 회수해 다음 공격으로 연결했습니다.',
+  '네 장수12조합84개 검사와 양 배치·4개 표시 FPS의 입력48경기489개 검사를 통과했습니다. 일반 대결 최대 골반 보정11.51cm, 회피 포함17.26cm. 준비·회수 시간을 줄이고 회피 뒤 발을 회수합니다. 자연스러움 완성 판정은 아닙니다.',
+  '상체 버팀과 갑주 경직 개선, 다양한 반격·거리 회복 저작')
  update('paired_motion','이동 공방의 접지와 변형된 몸통 타격','화면·시뮬레이션·무기 조회에 같은 이동 프레임을 쓰고, 갑옷과 실제 스킨 복부를 타격 표면에 포함했습니다.',
   '현재 표면 타격은 장비→여포 한 방향입니다. 실제 패키지의 두 배치에서 변형 복부에 각5번 명중했고 자연 종료를 확인했습니다. 12개 이동 조합 검사는 모든 방향의 정밀 충돌 검증이 아닙니다.',
   '다른 장수·반대 공격의 표면 접촉, 연속 충돌과 체중 반응 확장')

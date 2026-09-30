@@ -399,7 +399,7 @@ def build() -> dict:
     ui = read_json("artifacts/ui-results.json")
     duel_sources = [read_json("artifacts/" + name) for name in (
         "duel-director-tests.json", "duel-matchups-tests.json",
-        "duel-field-arena-flow-r2.json" if development.get("currentRevision")=="field-v1" else "duel-arena-tests.json", "battle-duel-ui-tests.json")]
+        "duel-field-arena-flow-r3.json" if development.get("currentRevision")=="field-v2" else "duel-arena-tests.json", "battle-duel-ui-tests.json")]
     for result in [physics, individual_render, gpu_render, pose, ui, *portable, *duel_sources]:
         if not result or result.get("failures"):
             raise ValueError("Required current check evidence is missing or contains failures")
@@ -499,7 +499,7 @@ def build() -> dict:
             checks={name:number(checks.get(name)) for name in ("assets", "rules", "ui", "render_lod_gpu") if number(checks.get(name)) is not None},
             videoVerified=m051_complete if key == "M05.1" else m05_complete if key == "M05" else raw.get("youtube", {}).get("privacy") == "private" and raw.get("status") == "complete" if isinstance(raw.get("youtube"), dict) else False))
     now = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-    if development.get("currentRevision")=="field-v1":
+    if development.get("currentRevision")=="field-v2":
         for row in parity:
             if row["area"]=="모델·재질·표현":
                 row.update(current="여포 field/v1f의 가중 허리·망토, 세 장수 arm_v3·원화/3D 감상",gap="원화와 3D의 미술 격차·다른 장수 의상 스키닝·지형 접지·말 골격",next="얼굴·갑옷·의상의 품질과 몸통 체중 반응 개선")
@@ -516,7 +516,7 @@ def build() -> dict:
                     "boundary":"현재는 독립 개발 중인 전략 게임입니다. 항목별 구현과 검증을 기록하며 전체 동등성이나 완성률을 주장하지 않습니다."},
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
         "domains":[{"id":"battle","label":"전투·물리"},{"id":"campaign","label":"캠페인"},{"id":"graphics","label":"그래픽·동작"},{"id":"performance","label":"최적화"},{"id":"modding","label":"모드·튜닝"},{"id":"tooling","label":"엔진·도구"}],
-        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v1" else cards, "parity":parity, "milestones":public_milestones,
+        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v2" else cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
         "originalGameRuntime":original_public,
@@ -562,7 +562,7 @@ def validate(data: dict) -> None:
                     "pairedMatchups":12,"pairedSampleHz":240,"pairedActorPairPoses":20592,
                     "pairedArmChecks":33,"genericArmChecks":22,"artPackageChecks":95,"packedPortraits":16,
                     "catalogSha256":REVIEWED_CATALOG_SHA256,"experimentalPelvisAssetsPackaged":False}
-        if development.get("currentRevision") == "field-v1":
+        if development.get("currentRevision") == "field-v2":
             field_review.validate_public(development)
         elif any(development.get(key) != value for key,value in expected.items()):
             raise ValueError("Public development fields differ from the reviewed snapshot contract")
