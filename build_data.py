@@ -98,6 +98,33 @@ def reviewed_fullbody_prototype() -> dict:
 
 
 def reviewed_paired_authoring() -> dict:
+    latest = ROOT / "artifacts/paired-fullbody-authoring-release-r2.json"
+    if latest.exists():
+        if file_sha256(latest) != "7b3786d1c00568a6d947080ca142eb6680ff01eeb935171f3dbd27a0b935b025":
+            raise ValueError("Reviewed corrected paired authoring release changed")
+        doc = read_json("artifacts/paired-fullbody-authoring-release-r2.json")
+        expected = {"status":"targeted_authoring_constraints_verified","revision":"zl_phrase_v14",
+                    "production_adopted":False,"naturalness_accepted":False,"battle_outcomes_integrated":False,
+                    "deform_bones":128,"skinned_meshes":32,"authored_frames":480,
+                    "bone_matrix_observations":1024,"registered_skin_cpu_bakes":256,
+                    "finite_mesh_review_frames":480,"finite_mesh_review_passed":True,"paired_pole_observations":3840}
+        if any(doc.get(key) != value for key,value in expected.items()):
+            raise ValueError("Corrected paired authoring exceeds its reviewed scope")
+        for name,digest in doc["sources"].items():
+            source = (ROOT/name).resolve()
+            source.relative_to(ROOT.resolve())
+            if file_sha256(source) != digest:
+                raise ValueError("Corrected paired authoring evidence changed")
+        mesh = read_json("artifacts/zl-phrase-mesh-r6.json")
+        poles = read_json("artifacts/zl-phrase-poles-r2.json")
+        gpu = read_json("artifacts/zl-phrase-gpu-r9.json")
+        if (mesh.get("failures") != [] or mesh.get("checked_frames") != 480
+                or mesh.get("weapon_pairs_with_crossing_frames") or mesh.get("forearm_pairs_with_crossing_frames")
+                or mesh.get("source_unchanged") is not True or poles.get("failures") != []
+                or len(poles.get("observations",[])) != 3840 or gpu.get("failures") != []
+                or len(gpu.get("registered_skin_cpu_bakes",[])) != 256):
+            raise ValueError("Corrected paired authoring does not match actual reviewed results")
+        return {"deformBones":128,"skins":32,"frames":480,"productionAdopted":False,"clearancePassed":True}
     relative = "artifacts/paired-fullbody-authoring-release-r1.json"
     path = ROOT / relative
     if not path.exists():
@@ -536,7 +563,10 @@ def build() -> dict:
     fullbody_prototype = reviewed_fullbody_prototype()
     if fullbody_prototype:
         cards.append(card("fullbody_rig", "여포 전신 가중 리그 제작", "graphics", "in_progress", "M05.1 · 리그 후보", "척추·쇄골·팔 비틀림·손목·손가락·다리·발목·발끝과 망토의64개 변형 뼈를 만들고17개 몸/의상 메시를 스키닝했습니다. 기본 게임과 별도로 실행하는 리그 후보입니다.", "저장 파일240프레임의 실제 IK 끝점과 뼈 길이, 엔진6시점의 전체384개 뼈 자세와102개 등록 Skin CPU bake를 대조했습니다. GPU 렌더 화면은 확인했지만 실제 GPU 정점 버퍼 읽기나 전체 형상 충돌 검사는 아닙니다. 8초 자료는 한 인물의 동작 범위이며 두 장수 공방·원작 품질 완료가 아닙니다.", "상대의 전신 리그·양손 무기 앵커·여러 사건/반격 분기를 가진 공방, 실제 변형된 자기 몸/상대 형상과 전장 지지 검수", "focus"))
-    if reviewed_paired_authoring():
+    paired_authoring = reviewed_paired_authoring()
+    if paired_authoring and paired_authoring["clearancePassed"]:
+        cards.append(card("paired_fullbody_authoring", "장비·여포 전신 공방 제작과 관통 검수", "graphics", "in_progress", "M05.1 · 제작 후보", "팔 기준 형상과 실제 팔꿈치·무릎 굽힘 방향을 고쳐 새 두 장수 리그를 만들었습니다. 준비 자세와 여포의 회수·물러남·반격 진입을 같은8초 공방에서 함께 저작했습니다.", "480프레임에서 무기는 자기·상대의 머리/몸통, 전완/손은 자기 머리/몸통과의 표면 교차가 검출되지 않았습니다. 지지 발·그립,3,840굽힘 방향과 실제 엔진8시점1,024뼈/256등록 CPU Skin bake도 확인했습니다. 유한 표면 교차 검사이며 완전 포함·연속 충돌·다른 신체/옷·원작 수준 전체 동작·실전 피해/승패 통합은 아직 검수 중입니다. 기본 게임에 채택한 결과가 아닙니다.", "공방 전체의 자연스러움·추가 신체/의상과 연속 충돌, 반응 분기·입출구·실제 전장 연결을 검수", "focus"))
+    elif paired_authoring:
         cards.append(card("paired_fullbody_authoring", "장비·여포 전신 공방 제작과 관통 검수", "graphics", "in_progress", "M05.1 · 제작 후보", "장비의64개 변형 뼈/15개 Skin을 추가하고, 두 장수128개 뼈/32개 Skin·개별 루트/무기·8초480프레임 공통 클립과 별도 프레임 뷰어를 제작했습니다.", "재로딩480프레임과 엔진8시점의1,024개 뼈 자세·256개 등록 CPU Skin bake는 통과했지만 실제 무기·전완/손과 머리/몸통의 형상 검수는 실패했습니다. 선택한 교차30건을 별도 삼각형 계산으로 확인했고 새 리그의 기준 메시 겹침도 찾았습니다. 실패 후보를 보존하며 기본 게임에 채택하지 않았습니다.", "기준 자세·가중치/갑주와 실제 형상 제약부터 수정한 뒤, 공방 전체·반응 분기·전장 연결을 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
