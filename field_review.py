@@ -2,7 +2,7 @@
 import hashlib,json
 from pathlib import Path
 
-PCK="b3cce294dd9004f3d00efa1718c82a5662b0239a6cc569ea8d8e815316afb5b5"
+PCK="235db6c2ba8c4e97f67c9455d1b01fbd19a522151133d4ddaa9ddcda7719bfd3"
 CATALOG="37e6dc3f81db2c4c5319cdc5df4e7d8f3085ec5bf273a71f9d2cde494e259c4a"
 MODELS={
  "lubu":("assets/models/heroes/field/lubu.glb","d74c3e065720e64d6b69f20f7f117b9c7695cdaa3253739c7d73c685e09fcfd6"),
@@ -11,16 +11,16 @@ MODELS={
  "machao":("assets/models/heroes/arm_v3/machao.glb","73f44e4bfaae268721088d403735b335aa1720e340daabaaa26a9e060ef3e6ec"),
 }
 REPORTS={
- "gallery":("hero-gallery-integrated-r1.json","6ef0245b71886e600a93ce741e87d1b4d2044d73c6bd60cd893414bc1a527b1a"),
- "pairs":("duel-integrated-all-pairs-r1.json","cdf28f546a045f53d2effef81b1a8f26bdea099dbcf967a673b4dfd1eef946d7"),
- "packed":("duel-integrated-pack-r1.json","b2bad3796e95b2d7308548b34fad77cc970d1c33e5fd2b15977af2f651ca5d63"),
- "gpu":("duel-integrated-pack-gpu-r1.json","9c535f949c78fe753620e0dffb411cfdc7811d1323c3ce5c79a7e215839424ec"),
- "art":("integrated-pack-art-r1.json","20b15224f9e26ec4d5fed76fb88ca874dcc6a6c1f53eeb2fb5b51162f918ec04"),
- "inputs":("duel-integrated-cadence-r1.json","50311a827fe4e84f2458d2414fcfd55c7122def1a1398a75e70806d1dc793a42"),
- "main_battle":("battle-duel-integrated-packed-r1.json","59e3af764f9dd90c9d1e7a2d8c55c599dc843c4b8b37bfd71690b72023a90aaf"),
- "main_gpu":("battle-duel-integrated-packed-gpu-r1.json","8b8978ee7908ff380d1a018f81df2d9420dbee657a68152f3fbe297f2b1b4b4e"),
+ "gallery":("flow-gallery-r1.json","6ef0245b71886e600a93ce741e87d1b4d2044d73c6bd60cd893414bc1a527b1a"),
+ "pairs":("flow-production-pairs-r1.json","be33eb054c1d76851b60a628642678b53d1c2676797a4f84ee6c02212d9f3e12"),
+ "packed":("flow-pack-duel-r1.json","e9dd17dfb90c463ffa15ff176211b1d9151d7e1f74c29e45718aaa621f20fd56"),
+ "gpu":("flow-pack-skin-gpu-r1.json","4637425d1e492048d7ea6deca44e3252b42a979a49b0b33b62dd536bfb58226f"),
+ "art":("flow-pack-art-r1.json","099a8268657606e982e901cd9f9f67e6371c9e121b66420cbc6e4b32211409c3"),
+ "inputs":("flow-production-input-r1.json","3dec8d2cc8b7ccf2f0a6e6937f05883fbd67286aebde8ee7f298a140e1231b83"),
+ "main_battle":("flow-pack-main-battle-r1.json","8859a92b6a6d2bae2f72a35a2294d4853f269a1396db3aa5d5b26bc452cd2d60"),
+ "main_gpu":("flow-pack-main-gpu-r1.json","e0a88b582b6325da63adebd5253deb2113cd857001605c4e2ec674815be1d7b8"),
 }
-CURVE="8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c"
+CURVE="7a0a0980e6b399c7fc81013387055dd467a4bcd6a122ca8bb654600a73a89466"
 
 def sha(path):
  h=hashlib.sha256()
@@ -30,8 +30,8 @@ def sha(path):
 
 def read(root):
  def load(name):return json.loads((root/name).read_text(encoding='utf-8-sig'))
- manifest=load('build/Tianxia-next/build-manifest.json')
- if manifest.get('packaged_sha256',{}).get('Tianxia.pck')!=PCK or sha(root/'build/Tianxia-next/Tianxia.pck')!=PCK:
+ manifest=load('build/Tianxia-flow/build-manifest.json')
+ if manifest.get('packaged_sha256',{}).get('Tianxia.pck')!=PCK or sha(root/'build/Tianxia-flow/Tianxia.pck')!=PCK:
   raise ValueError('Field package differs from its reviewed bytes')
  if manifest.get('source_unchanged_during_export_and_validation') is not True:raise ValueError('Field export did not preserve sources')
  for name,expected in manifest.get('source_sha256',{}).items():
@@ -91,8 +91,8 @@ def read(root):
   if report.get('passed')!=92 or report.get('failures')!=[] or report.get('launch_mode')!=mode or report.get('pck_sha256')!=PCK or recorded.get('passed')!=92:raise ValueError('Field portable mode evidence changed')
   portable[mode]=92
  return {
-  'currentRevision':'field-v3','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
-  'modelRevisions':{'lubu':'field/v1f','guanyu':'arm_v3','zhangfei':'arm_v3','machao':'arm_v3'},'pairedCurveRevision':'v4 + measured Zhang/Lu contacts','pairedCurveSha256':CURVE,
+  'currentRevision':'field-v4','portablePckSha256':PCK,'portableByMode':portable,'modelSha256':{key:row[1] for key,row in MODELS.items()},
+  'modelRevisions':{'lubu':'field/v1f','guanyu':'arm_v3','zhangfei':'arm_v3','machao':'arm_v3'},'pairedCurveRevision':'v5 continuity-v2 + measured Zhang/Lu contacts','pairedCurveSha256':CURVE,
   'galleryChecks':127,'galleryHeroes':4,'roamingChecks':84,'roamingMatchups':12,'packedRuntimeChecks':19,'gpuSkinReadbacks':10,
   'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
   'normalBattleChecks':18,'normalBattleAgents':5184,'normalBattleOrders':2,'normalBattleGpuReadbacks':6,
@@ -107,7 +107,7 @@ def read(root):
  }
 
 def validate_public(data):
- expected={'currentRevision':'field-v3','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
+ expected={'currentRevision':'field-v4','portablePckSha256':PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
   'modelSha256':{key:row[1] for key,row in MODELS.items()},'galleryChecks':127,'roamingChecks':84,'roamingMatchups':12,
   'packedRuntimeChecks':19,'gpuSkinReadbacks':10,'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
   'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3',
@@ -126,8 +126,8 @@ def update_cards(cards):
  update('hero_models','여포의 가중 허리·망토와 장수 모델','여포 field/v1f의 골반·복부·망토가 따로 움직이고, 관우·장비·마초는 arm_v3를 유지합니다.',
   '실제 패키지 GPU에서 복부·망토 스킨을10번 읽어 CPU 좌표와 비교했습니다. 이전 모델의 팔 정점 검사 수치를 이 새 모델의 검증으로 재사용하지 않습니다. 얼굴·갑주·옷과 원화의 미술 격차는 남습니다.',
   '전체 장수의 의상 스키닝과 모델·재질 품질 개선')
- update('hero_animation','발걸음으로 이어지는 전신 공방','준비·회수의 멈춤을 줄이고, 회피 뒤 지지 발을 회수해 다음 공격으로 연결했습니다.',
-  '네 장수12조합84개 검사와 양 배치·4개 표시 FPS의 입력48경기489개 검사를 통과했습니다. 일반 대결 최대 골반 보정11.51cm, 회피 포함17.26cm. 준비·회수 시간을 줄이고 회피 뒤 발을 회수합니다. 자연스러움 완성 판정은 아닙니다.',
+ update('hero_animation','준비·회수 자세의 연속적인 공방','v5 곡선으로 중복된 준비 정지를 제거하고 상체가 회수를 이어가게 했습니다. 무기 접촉 구간·발·HP/승패 시계는 유지합니다.',
+  '새 실행본의12조합84개·입력48경기489개 검사. 같은 여포 공격 회수의120Hz 진단에서 최대 각속도9.0→7.3rad/s이며 첫 후보24rad/s는 수정했습니다. 이 한 경기 진단을 자연스러움 점수로 사용하지 않습니다. 기본/후보 GPU 비교와 편집용 Blender312프레임 재로딩을 별도 검수했습니다.',
   '상체 버팀과 갑주 경직 개선, 다양한 반격·거리 회복 저작')
  update('paired_motion','이동 공방의 접지와 변형된 몸통 타격','화면·시뮬레이션·무기 조회에 같은 이동 프레임을 쓰고, 갑옷과 실제 스킨 복부를 타격 표면에 포함했습니다.',
   '현재 표면 타격은 장비→여포 한 방향입니다. 실제 패키지의 두 배치에서 변형 복부에 각5번 명중했고 자연 종료를 확인했습니다. 12개 이동 조합 검사는 모든 방향의 정밀 충돌 검증이 아닙니다.',

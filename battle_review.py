@@ -19,6 +19,7 @@ def read(root):
  for name,expected in logic['sources_before'].items():
   path=root/name.removeprefix('res://')
   if name.startswith('res://src/'):path=root/'artifacts/pre-full-battle-duel-build'/name.removeprefix('res://')
+  if name=='res://assets/animations/duel-exchanges.json':path=root/'artifacts/pre-motion-flow-source/duel-exchanges.json'
   if hashlib.sha256(path.read_bytes()).hexdigest()!=expected:raise ValueError('Archived battlefield prototype source changed')
  pairs={(a,b) for a in range(4) for b in range(4) if a!=b}
  if {tuple(row['pair']) for row in logic['cases'] if row['intent']=='none'}!=pairs:raise ValueError('Battlefield prototype pairs are incomplete')

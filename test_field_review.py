@@ -3,7 +3,7 @@ import field_review
 
 class FieldScopeTests(unittest.TestCase):
  def evidence(self):
-  return {'currentRevision':'field-v3','portablePckSha256':field_review.PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
+  return {'currentRevision':'field-v4','portablePckSha256':field_review.PCK,'portableByMode':{'menu':92,'duel':92,'heroes':92},
    'modelSha256':{key:row[1] for key,row in field_review.MODELS.items()},'galleryChecks':127,'roamingChecks':84,'roamingMatchups':12,
    'cadenceInputChecks':489,'cadenceInputMatches':48,'cadenceRevision':'r3','normalBattleChecks':18,'normalBattleAgents':5184,'normalBattleOrders':2,'normalBattleGpuReadbacks':6,'packedRuntimeChecks':19,'gpuSkinReadbacks':10,'weightedHeroes':['lubu'],'measuredContactDirections':['zhangfei->lubu'],
    'packedPortraits':16,'catalogSha256':field_review.CATALOG,'pairedCurveSha256':field_review.CURVE,'groundingChecks':0,

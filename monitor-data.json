@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-30T21:49:23+00:00",
+  "updatedAt": "2026-10-01T00:32:16+00:00",
   "project": {
     "name": "천하",
     "englishName": "TIANXIA",
@@ -232,12 +232,12 @@
     },
     {
       "id": "hero_animation",
-      "title": "발걸음으로 이어지는 전신 공방",
+      "title": "준비·회수 자세의 연속적인 공방",
       "domain": "graphics",
       "status": "in_progress",
       "milestone": "M05.1",
-      "summary": "준비·회수의 멈춤을 줄이고, 회피 뒤 지지 발을 회수해 다음 공격으로 연결했습니다.",
-      "evidence": "네 장수12조합84개 검사와 양 배치·4개 표시 FPS의 입력48경기489개 검사를 통과했습니다. 일반 대결 최대 골반 보정11.51cm, 회피 포함17.26cm. 준비·회수 시간을 줄이고 회피 뒤 발을 회수합니다. 자연스러움 완성 판정은 아닙니다.",
+      "summary": "v5 곡선으로 중복된 준비 정지를 제거하고 상체가 회수를 이어가게 했습니다. 무기 접촉 구간·발·HP/승패 시계는 유지합니다.",
+      "evidence": "새 실행본의12조합84개·입력48경기489개 검사. 같은 여포 공격 회수의120Hz 진단에서 최대 각속도9.0→7.3rad/s이며 첫 후보24rad/s는 수정했습니다. 이 한 경기 진단을 자연스러움 점수로 사용하지 않습니다. 기본/후보 GPU 비교와 편집용 Blender312프레임 재로딩을 별도 검수했습니다.",
       "next": "상체 버팀과 갑주 경직 개선, 다양한 반격·거리 회복 저작",
       "priority": "focus"
     },
@@ -600,8 +600,8 @@
     "scope": "기하·동작 재생 검사. 피부·관절·접지의 자연스러움과 실제 무기 충돌을 입증하는 점수는 아닙니다."
   },
   "developmentEvidence": {
-    "currentRevision": "field-v3",
-    "portablePckSha256": "b3cce294dd9004f3d00efa1718c82a5662b0239a6cc569ea8d8e815316afb5b5",
+    "currentRevision": "field-v4",
+    "portablePckSha256": "235db6c2ba8c4e97f67c9455d1b01fbd19a522151133d4ddaa9ddcda7719bfd3",
     "portableByMode": {
       "menu": 92,
       "duel": 92,
@@ -619,8 +619,8 @@
       "zhangfei": "arm_v3",
       "machao": "arm_v3"
     },
-    "pairedCurveRevision": "v4 + measured Zhang/Lu contacts",
-    "pairedCurveSha256": "8eaa7adafc86b44a925f438aeed53124607c6385aa4174427ba172136f80855c",
+    "pairedCurveRevision": "v5 continuity-v2 + measured Zhang/Lu contacts",
+    "pairedCurveSha256": "7a0a0980e6b399c7fc81013387055dd467a4bcd6a122ca8bb654600a73a89466",
     "galleryChecks": 127,
     "galleryHeroes": 4,
     "roamingChecks": 84,
@@ -634,8 +634,8 @@
     "normalBattleAgents": 5184,
     "normalBattleOrders": 2,
     "normalBattleGpuReadbacks": 6,
-    "inputMaximumPelvisAdjustmentCm": 17.26,
-    "maximumPelvisAdjustmentCm": 11.5,
+    "inputMaximumPelvisAdjustmentCm": 17.25,
+    "maximumPelvisAdjustmentCm": 11.46,
     "weightedHeroes": [
       "lubu"
     ],
