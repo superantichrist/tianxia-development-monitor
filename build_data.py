@@ -73,6 +73,30 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def reviewed_fullbody_prototype() -> dict:
+    path = ROOT / "artifacts/lubu-fullbody-prototype-release-r1.json"
+    if not path.exists():
+        return {}
+    if file_sha256(path) != "003b0faf3af9dd0fed3a121c5cc938e9eb79ca2cb16e3c356cfc541a30ac78d5":
+        raise ValueError("Reviewed full-body prototype release changed")
+    doc = read_json("artifacts/lubu-fullbody-prototype-release-r1.json")
+    if (doc.get("production_adopted") is not False or doc.get("paired_fight") is not False
+            or doc.get("deform_bones") != 64 or doc.get("skinned_meshes") != 17
+            or doc.get("range_frames") != 240 or doc.get("bone_matrix_observations") != 384
+            or doc.get("registered_skin_cpu_bake_checks") != 102):
+        raise ValueError("Full-body prototype scope differs from reviewed evidence")
+    model = ROOT / "artifacts/rig-prototypes/fullbody-v3/lubu.glb"
+    if file_sha256(model) != doc.get("model_sha256"):
+        raise ValueError("Reviewed full-body model changed")
+    for relative, expected in doc["sources"].items():
+        source = (ROOT / relative).resolve()
+        source.relative_to(ROOT.resolve())
+        if file_sha256(source) != expected:
+            raise ValueError("Full-body prototype evidence changed")
+    return {"deformBones":64,"skinnedMeshes":17,"rangeFrames":240,"boneMatrices":384,
+            "registeredCpuBakes":102,"productionAdopted":False,"pairedFight":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -478,6 +502,9 @@ def build() -> dict:
         cards.append(card("battlefield_duel", "실제 병사 전장과 상세 일기토 시제품", "battle", "in_progress", "M05.1 · 전장 연결", "320명의 실제 전투와 같은 장군 ID·HP를 쓰며, 주변 병사와 보급 수레를 고려해 경로를 선택하고 전장 지면에 발을 딛습니다.", "네 장수12대진과 입력을 포함한20경기221개 검사, 실제 GPU의 원래 표시 슬롯12개·스킨18개 읽기, 실제 지형256점 비교. 흰 기둥처럼 쌓이던 화살 표시 시계를 고쳤습니다. 보존된 시제품의 근거이며 이후 일반 전투 연결은 별도 카드에서 기록합니다. 고밀도·공성·돌발 장애물 검증은 미완료입니다.", "일반 전투 메뉴 연결과 밀도·공성·막힌 경로, 상체 동작/병력 미술 품질 검수", "focus"))
     if development.get("currentRevision")=="field-v4":
         cards.append(card("normal_battle_duel", "일반 전투의 상세 장수 일기토 연결", "battle", "in_progress", "M05.1 · 전투 통합", "사용자 지정 전투에서 네 장수를 선택하고 일반 일기토 버튼으로 상세 모델·지면 접지·이동 공방을 시작합니다. 받아치기/회피/태세와 움직이는 카메라를 전투 HUD에 연결했습니다.", "새 독립 패키지의 실제 일반 전투에서5,184명 병사를 유지한 두 장비–여포 배치18개 검사와 GPU 표시 슬롯6개를 확인했습니다. 승부 뒤 전투는 계속되고 원래 표시를 복구합니다. 모든 대진·밀도·공성의 통합 검증이나 원작 수준의 동작 품질 완료는 아닙니다.", "일반 전투의 전 대진·입력·공성·고밀도·모델 전환과 상체/병사/말 품질 검수", "focus"))
+    fullbody_prototype = reviewed_fullbody_prototype()
+    if fullbody_prototype:
+        cards.append(card("fullbody_rig", "여포 전신 가중 리그 제작", "graphics", "in_progress", "M05.1 · 리그 후보", "척추·쇄골·팔 비틀림·손목·손가락·다리·발목·발끝과 망토의64개 변형 뼈를 만들고17개 몸/의상 메시를 스키닝했습니다. 기본 게임과 별도로 실행하는 리그 후보입니다.", "저장 파일240프레임의 실제 IK 끝점과 뼈 길이, 엔진6시점의 전체384개 뼈 자세와102개 등록 Skin CPU bake를 대조했습니다. GPU 렌더 화면은 확인했지만 실제 GPU 정점 버퍼 읽기나 전체 형상 충돌 검사는 아닙니다. 8초 자료는 한 인물의 동작 범위이며 두 장수 공방·원작 품질 완료가 아닙니다.", "상대의 전신 리그·양손 무기 앵커·여러 사건/반격 분기를 가진 공방, 실제 변형된 자기 몸/상대 형상과 전장 지지 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
