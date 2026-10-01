@@ -97,6 +97,37 @@ def reviewed_fullbody_prototype() -> dict:
             "registeredCpuBakes":102,"productionAdopted":False,"pairedFight":False}
 
 
+def reviewed_paired_authoring() -> dict:
+    relative = "artifacts/paired-fullbody-authoring-release-r1.json"
+    path = ROOT / relative
+    if not path.exists():
+        return {}
+    if file_sha256(path) != "987f3c45bfb936028018207a20203e31b7a31b5b9d9bf7abe8ea81f77d6c5e34":
+        raise ValueError("Reviewed paired authoring release changed")
+    doc = read_json(relative)
+    expected = {"status":"rejected_clearance_candidate_preserved", "revision":"zl_phrase_v11",
+                "production_adopted":False,"naturalness_accepted":False,"battle_outcomes_integrated":False,
+                "deform_bones":128,"skinned_meshes":32,"authored_frames":480,
+                "bone_matrix_observations":1024,"registered_skin_cpu_bakes":256,
+                "finite_mesh_review_frames":480,"finite_mesh_review_passed":False,
+                "independent_triangle_crossing_confirmations":30,"rest_forearm_body_overlap_detected":True}
+    if any(doc.get(key) != value for key,value in expected.items()):
+        raise ValueError("Paired authoring scope differs from reviewed failed candidate")
+    for name,digest in doc["sources"].items():
+        source = (ROOT / name).resolve()
+        source.relative_to(ROOT.resolve())
+        if file_sha256(source) != digest:
+            raise ValueError("Paired authoring evidence changed")
+    gpu = read_json("artifacts/zl-phrase-gpu-r6.json")
+    mesh = read_json("artifacts/zl-phrase-mesh-r3.json")
+    if (gpu.get("failures") != [] or gpu.get("source_unchanged") is not True
+            or len(gpu.get("registered_skin_cpu_bakes",[])) != 256
+            or mesh.get("checked_frames") != 480 or not mesh.get("failures")
+            or mesh.get("source_unchanged") is not True):
+        raise ValueError("Paired authoring must distinguish import passes and clearance failures")
+    return {"deformBones":128,"skins":32,"frames":480,"productionAdopted":False,"clearancePassed":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -505,6 +536,8 @@ def build() -> dict:
     fullbody_prototype = reviewed_fullbody_prototype()
     if fullbody_prototype:
         cards.append(card("fullbody_rig", "여포 전신 가중 리그 제작", "graphics", "in_progress", "M05.1 · 리그 후보", "척추·쇄골·팔 비틀림·손목·손가락·다리·발목·발끝과 망토의64개 변형 뼈를 만들고17개 몸/의상 메시를 스키닝했습니다. 기본 게임과 별도로 실행하는 리그 후보입니다.", "저장 파일240프레임의 실제 IK 끝점과 뼈 길이, 엔진6시점의 전체384개 뼈 자세와102개 등록 Skin CPU bake를 대조했습니다. GPU 렌더 화면은 확인했지만 실제 GPU 정점 버퍼 읽기나 전체 형상 충돌 검사는 아닙니다. 8초 자료는 한 인물의 동작 범위이며 두 장수 공방·원작 품질 완료가 아닙니다.", "상대의 전신 리그·양손 무기 앵커·여러 사건/반격 분기를 가진 공방, 실제 변형된 자기 몸/상대 형상과 전장 지지 검수", "focus"))
+    if reviewed_paired_authoring():
+        cards.append(card("paired_fullbody_authoring", "장비·여포 전신 공방 제작과 관통 검수", "graphics", "in_progress", "M05.1 · 제작 후보", "장비의64개 변형 뼈/15개 Skin을 추가하고, 두 장수128개 뼈/32개 Skin·개별 루트/무기·8초480프레임 공통 클립과 별도 프레임 뷰어를 제작했습니다.", "재로딩480프레임과 엔진8시점의1,024개 뼈 자세·256개 등록 CPU Skin bake는 통과했지만 실제 무기·전완/손과 머리/몸통의 형상 검수는 실패했습니다. 선택한 교차30건을 별도 삼각형 계산으로 확인했고 새 리그의 기준 메시 겹침도 찾았습니다. 실패 후보를 보존하며 기본 게임에 채택하지 않았습니다.", "기준 자세·가중치/갑주와 실제 형상 제약부터 수정한 뒤, 공방 전체·반응 분기·전장 연결을 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
