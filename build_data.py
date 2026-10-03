@@ -241,6 +241,36 @@ def reviewed_reactive_first_strike() -> dict:
     return {"cases":15,"checks":183,"productionAdopted":False,"naturalnessAccepted":False}
 
 
+def reviewed_three_exchanges() -> dict:
+    relative="artifacts/duel-phrase-three-exchanges-release-r1.json"
+    path=ROOT/relative
+    if not path.exists():return {}
+    if file_sha256(path)!="194f96a0e6597c8b402239caa05442211b3fc36441e7cd5d00682a73dc1e5c88":
+        raise ValueError("Reviewed three-window release changed")
+    doc=read_json(relative)
+    expected={"status":"three_contact_windows_reviewed_flat_stage","production_adopted":False,
+              "naturalness_accepted":False,"normal_battle_integrated":False,
+              "later_weapon_windows_integrated":True,"later_body_reactions_integrated":False,
+              "next_phrase_graph_integrated":False,"actual_contact_windows":3,"contract_checks":144,
+              "intent_dt_cases":15,"actual_contour_pose_observations":212,
+              "independent_segment_oracle_cases":105,"total_registered_skin_cpu_bakes":864,
+              "total_rendered_engine_key_events":12}
+    if any(doc.get(k)!=v for k,v in expected.items()):raise ValueError("Three-window scope exceeds actual prototype")
+    for name,digest in doc["sources"].items():
+        source=(ROOT/name).resolve();source.relative_to(ROOT.resolve())
+        if file_sha256(source)!=digest:raise ValueError("Three-window evidence changed")
+    contract=read_json("artifacts/duel-phrase-exchange-contract-r2.json")
+    if contract.get("failures")!=[] or contract.get("passed")!=144 or len(contract.get("cases",[]))!=15:
+        raise ValueError("Three-window contract does not match actual cases")
+    for name,outcomes in {"threat":["hit","parried","parried"],"guard":["parried"]*3,"miss":["miss","parried","parried"]}.items():
+        gpu=read_json(f"artifacts/duel-exchange-{name}-gpu-r2.json")
+        if (gpu.get("failures")!=[] or [r["result"]["outcome"] for r in gpu.get("history",[])]!=outcomes
+                or len(gpu.get("registered_skin_cpu_bakes",[]))!=288 or len(gpu.get("input_events",[]))!=4
+                or gpu.get("hero_hp")!=([100.0,88.0] if name=="threat" else [100.0,100.0])):
+            raise ValueError("Three rendered choices disagree with reviewed contacts")
+    return {"windows":3,"checks":144,"productionAdopted":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -666,6 +696,12 @@ def build() -> dict:
         item["summary"] = "두 전신 리그의 실제 창날 접촉에서 장군 HP와 피격·무기 회수로 이어지는 별도 조작 시제품을 만들었습니다. 진입 선택·정지·재개와 늦은 선택 거부를 연결했습니다."
         item["evidence"] = "세 진입과 시간 간격15조합·183검사, 실제 키 입력/렌더9시점의288등록 CPU Skin bake를 확인했습니다. 접촉 시 두 루트·무기·128뼈를 유지합니다. 전체480저장 자세에서 지정 자기 전완 교차는 검출되지 않았고 창날/몸통 교차는 접촉 직후6표본으로 줄었습니다. 자산8시점1,024뼈/256bake와3,840굽힘 방향도 확인했습니다. 유한 표면 검사이며 완전 충돌·후속 피해·전장/지형·원작 자연스러움과 미술 품질은 미완료입니다. 기본 게임에 채택한 결과가 아닙니다."
         item["next"] = "후속 방어/반격 피해 창과 다음 공방 디딤/출구, 실제 지형·주변 병사의 전투 표시와 전신 리그·미술 품질을 연결"
+    exchanges=reviewed_three_exchanges()
+    if exchanges and paired_authoring:
+        item=next(c for c in cards if c["id"]=="paired_fullbody_authoring")
+        item["summary"]="첫 타격의 피격·방어·빗나감 뒤 장비의 후속 공세와 여포의 반격을 실제 무기 단면 접촉 창에 연결했습니다. 별도 조작 시제품에서 접촉 시각과 공격·방어 장수가 표시됩니다."
+        item["evidence"]="세 창·15시간 조합의144검사와 세 선택의 실제 키 입력/렌더864등록 CPU Skin bake를 확인했습니다. 실제 윤곽212자세·독립 거리105사례를 대조했고, 무기를 분리한 경우에는 세 창 모두 빗나감으로 피해가 없었습니다. 정지·개입·전사 후 남은 공방도 중단됩니다. 지정 단면의 유한 근접 판정이며 전체 무기 충돌/힘·후속 몸통 피격·다음 공방 그래프·실전 전장/지형과 원작 자연스러움은 미완료입니다. 기본 게임 채택은 아닙니다."
+        item["next"]="반격의 몸통 명중/피격 자료, 다음 공방 디딤/출구와 실제 지형·주변 병사 연결, 얼굴/갑주/옷과 긴 도약·낙법·재기 품질을 확장"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
