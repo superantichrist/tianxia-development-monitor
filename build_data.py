@@ -155,6 +155,53 @@ def reviewed_paired_authoring() -> dict:
     return {"deformBones":128,"skins":32,"frames":480,"productionAdopted":False,"clearancePassed":False}
 
 
+def reviewed_contact_window_research() -> dict:
+    relative = "artifacts/duel-phrase-contact-research-r1.json"
+    path = ROOT / relative
+    if not path.exists():
+        return {}
+    if file_sha256(path) != "9adcee1fad8a5b9afe7e3b463d6f1ab76f6c54ea656d75ddda7ba6266a009c2c":
+        raise ValueError("Reviewed contact/transition research changed")
+    doc = read_json(relative)
+    expected = {"status":"actual_contact_window_verified_response_and_transitions_unfinished",
+                "production_adopted":False,"naturalness_accepted":False,"reaction_accepted":False,
+                "playable_input_branches_integrated":False,"original_quality_achieved":False,
+                "geometry_assets":3,"geometry_poses_per_asset":67,"actual_window_cases":12,
+                "sample_rate":60,"first_observed_blade_frame":100,"first_observed_blade_seconds":1.65,
+                "weapon_body_crossing_frames":33,"legacy_all_weapon_clearance_gate_passed":False,
+                "prefix_common_last_frame":76,"prefix_first_different_frame":77,
+                "gpu_bone_observations":1024,"registered_engine_cpu_skin_bakes":256,
+                "gpu_vertex_buffer_readback":False}
+    if any(doc.get(key) != value for key,value in expected.items()):
+        raise ValueError("Contact-window research exceeds reviewed scope")
+    for name,digest in doc["sources"].items():
+        source = (ROOT/name).resolve()
+        source.relative_to(ROOT.resolve())
+        if file_sha256(source) != digest:
+            raise ValueError("Contact-window evidence changed")
+    mesh = read_json("artifacts/zl-phrase-open-mesh-r4.json")
+    windows = read_json("artifacts/duel-phrase-window-probe-r1.json")
+    transition = read_json("artifacts/duel-phrase-transition-audit-r1.json")
+    if (mesh.get("source_unchanged") is not True or mesh.get("forearm_pairs_with_crossing_frames") != {}
+            or mesh.get("weapon_pairs_with_crossing_frames") != {"A_WeaponMesh -> B_TorsoMesh":list(range(100,133))}
+            or mesh.get("failures") != ["Actual weapon/head-or-torso surface crossings in authored candidate"]
+            or windows.get("failures") != [] or len(windows.get("runs",[])) != 12
+            or windows.get("sources_before") != windows.get("sources_after")
+            or transition.get("first_different_frame",{}).get("frame") != 77):
+        raise ValueError("Contact research must preserve remaining crossings and transition gaps")
+    for run in windows["runs"]:
+        hit = "zl_phrase_open_v8" in run["model"]
+        history = run.get("history",[])
+        if len(history) != 1:
+            raise ValueError("Contact window resolves once")
+        result = history[0]["result"]
+        if (result.get("accepted") is not True or result.get("outcome") != ("hit" if hit else "miss")
+                or result.get("time") != (1.65 if hit else 2.5)
+                or run.get("hero_hp") != ([100.0,88.0] if hit else [100.0,100.0])):
+            raise ValueError("Contact window does not match actual geometry-gated HP")
+    return {"cases":12,"sampleHz":60,"bodyCrossingFrames":33,"productionAdopted":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -568,6 +615,12 @@ def build() -> dict:
         cards.append(card("paired_fullbody_authoring", "장비·여포 전신 공방 제작과 관통 검수", "graphics", "in_progress", "M05.1 · 제작 후보", "팔 기준 형상과 실제 팔꿈치·무릎 굽힘 방향을 고쳐 새 두 장수 리그를 만들었습니다. 준비 자세와 여포의 회수·물러남·반격 진입을 같은8초 공방에서 함께 저작했습니다.", "480프레임에서 무기는 자기·상대의 머리/몸통, 전완/손은 자기 머리/몸통과의 표면 교차가 검출되지 않았습니다. 지지 발·그립,3,840굽힘 방향과 실제 엔진8시점1,024뼈/256등록 CPU Skin bake도 확인했습니다. 유한 표면 교차 검사이며 완전 포함·연속 충돌·다른 신체/옷·원작 수준 전체 동작·실전 피해/승패 통합은 아직 검수 중입니다. 기본 게임에 채택한 결과가 아닙니다.", "공방 전체의 자연스러움·추가 신체/의상과 연속 충돌, 반응 분기·입출구·실제 전장 연결을 검수", "focus"))
     elif paired_authoring:
         cards.append(card("paired_fullbody_authoring", "장비·여포 전신 공방 제작과 관통 검수", "graphics", "in_progress", "M05.1 · 제작 후보", "장비의64개 변형 뼈/15개 Skin을 추가하고, 두 장수128개 뼈/32개 Skin·개별 루트/무기·8초480프레임 공통 클립과 별도 프레임 뷰어를 제작했습니다.", "재로딩480프레임과 엔진8시점의1,024개 뼈 자세·256개 등록 CPU Skin bake는 통과했지만 실제 무기·전완/손과 머리/몸통의 형상 검수는 실패했습니다. 선택한 교차30건을 별도 삼각형 계산으로 확인했고 새 리그의 기준 메시 겹침도 찾았습니다. 실패 후보를 보존하며 기본 게임에 채택하지 않았습니다.", "기준 자세·가중치/갑주와 실제 형상 제약부터 수정한 뒤, 공방 전체·반응 분기·전장 연결을 검수", "focus"))
+    contact_research = reviewed_contact_window_research()
+    if contact_research and paired_authoring:
+        item = next(c for c in cards if c["id"] == "paired_fullbody_authoring")
+        item["summary"] += " 첫 공격의 방어·빗나감·창날 접촉 후보와 실제 장군 체력의 접촉 창을 별도 검증했습니다."
+        item["evidence"] += " 실제 자산3개/각67자세와144·60·30Hz/긴 프레임의12조합에서 창날 접촉만 같은 시각에 한 번 피해를 적용했습니다. 새 명중 후보는 접촉 뒤33표본 교차가 남고, 발의 조기 분기와 공방 끝/시작 불일치도 확인했습니다. 자연스러운 피격·회수·연결과 실전 입력 통합은 미완료입니다."
+        item["next"] = "실제 접점에서의 피격·무기 회수, 공유 착지 입구와 다음 공방 디딤/거리 회복을 함께 저작하고 실제 플레이로 검수"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
