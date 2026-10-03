@@ -271,6 +271,40 @@ def reviewed_three_exchanges() -> dict:
     return {"windows":3,"checks":144,"productionAdopted":False}
 
 
+def reviewed_counter_recoil() -> dict:
+    relative="artifacts/duel-counter-recoil-release-r1.json";path=ROOT/relative
+    if not path.exists():return {}
+    if file_sha256(path)!="48863c153e48d422b0396eb51b07a943cda76ace4a03b8cc3dd2b139b6db2b92":raise ValueError("Reviewed counter recoil release changed")
+    doc=read_json(relative)
+    expected={"status":"counter_body_recoil_reviewed_flat_stage","production_adopted":False,
+              "normal_battle_integrated":False,"naturalness_accepted":False,"next_phrase_graph_integrated":False,
+              "counter_body_window_integrated":True,"both_hero_hp_integrated":True,
+              "first_intents":3,"counter_intents":2,"intent_dt_cases":30,"contract_checks":274,
+              "physical_contact_windows":3,"semantic_intent_entries":1,"counter_entry_seconds":4.25,
+              "counter_body_sample_seconds":4.85,"shared_counter_prefix_last_frame":265,
+              "shared_counter_recoil_last_frame":292,"finite_mesh_frames_per_new_asset":480,
+              "self_weapon_forearm_or_unexpected_head_crossings_detected":False,
+              "counter_recoil_body_crossing_frames":11,"legacy_all_weapon_clearance_gate_passed":False,
+              "asset_gpu_bone_observations_total":2048,"asset_registered_cpu_bakes_total":512,
+              "rendered_cpu_bakes_total":704,"rendered_engine_key_events_total":12}
+    if any(doc.get(k)!=v for k,v in expected.items()):raise ValueError("Counter recoil exceeds reviewed scope")
+    for name,digest in doc["sources"].items():
+        source=(ROOT/name).resolve();source.relative_to(ROOT.resolve())
+        if file_sha256(source)!=digest:raise ValueError("Counter recoil evidence changed")
+    contract=read_json("artifacts/duel-counter-contract-r3.json")
+    mesh=read_json("artifacts/zl-counter-hit-mesh-full-r4.json")
+    if (contract.get("passed")!=274 or contract.get("failures")!=[] or len(contract.get("cases",[]))!=30
+            or mesh.get("checked_frames")!=480 or mesh.get("forearm_pairs_with_crossing_frames")!={}
+            or mesh.get("weapon_pairs_with_crossing_frames")!={"A_WeaponMesh -> B_TorsoMesh":list(range(100,106)),"B_WeaponMesh -> A_TorsoMesh":list(range(292,303))}):
+        raise ValueError("Counter actual geometry/results disagree")
+    for kind,hp in [("body",[91.0,88.0]),("parry",[100.0,88.0])]:
+        gpu=read_json(f"artifacts/counter-{kind}-gpu-r1.json")
+        if (gpu.get("failures")!=[] or gpu.get("hero_hp")!=hp or len(gpu.get("history",[]))!=4
+                or len(gpu.get("input_events",[]))!=6 or len(gpu.get("registered_skin_cpu_bakes",[]))!=352):
+            raise ValueError("Rendered counter choices/health differ")
+    return {"checks":274,"cases":30,"productionAdopted":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -702,6 +736,12 @@ def build() -> dict:
         item["summary"]="첫 타격의 피격·방어·빗나감 뒤 장비의 후속 공세와 여포의 반격을 실제 무기 단면 접촉 창에 연결했습니다. 별도 조작 시제품에서 접촉 시각과 공격·방어 장수가 표시됩니다."
         item["evidence"]="세 창·15시간 조합의144검사와 세 선택의 실제 키 입력/렌더864등록 CPU Skin bake를 확인했습니다. 실제 윤곽212자세·독립 거리105사례를 대조했고, 무기를 분리한 경우에는 세 창 모두 빗나감으로 피해가 없었습니다. 정지·개입·전사 후 남은 공방도 중단됩니다. 지정 단면의 유한 근접 판정이며 전체 무기 충돌/힘·후속 몸통 피격·다음 공방 그래프·실전 전장/지형과 원작 자연스러움은 미완료입니다. 기본 게임 채택은 아닙니다."
         item["next"]="반격의 몸통 명중/피격 자료, 다음 공방 디딤/출구와 실제 지형·주변 병사 연결, 얼굴/갑주/옷과 긴 도약·낙법·재기 품질을 확장"
+    counter=reviewed_counter_recoil()
+    if counter and paired_authoring:
+        item=next(c for c in cards if c["id"]=="paired_fullbody_authoring")
+        item["summary"]="첫 피격 뒤 여포 반격의 몸통 명중과 장비의 전신 피격·무기 회수를 추가했습니다. 별도 시제품에서 첫 진입과 반격 방어/수비 열기를 선택하며 두 장군의 실제 개인 HP를 유지합니다."
+        item["evidence"]="첫3선택×반격2선택×5시간 간격30조합의274검사와 실제 반격 두 경우의 키 입력/렌더704등록 CPU Skin bake를 확인했습니다. 공통4.25초 진입과4.85초 실제 명중에서 두 루트·무기·128뼈를 유지하며 장비 HP91/방어100, 여포88을 확인했습니다. 새 두 자산 각각480저장 자세의 지정 자기 무기/팔·예상 밖 머리 교차는 미검출이고 반격 몸통11표본 교차는 보존합니다. 완전 충돌·다음 그래프·전장/지형과 원작 자연스러움·미술 품질은 미완료이며 기본 게임 채택은 아닙니다."
+        item["next"]="출구에서 다음 공방으로 이어지는 이동/디딤, 긴 도약·낙법·재기와 실제 전장/지형·주변 병사, 얼굴/갑주/옷 품질을 확장"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
