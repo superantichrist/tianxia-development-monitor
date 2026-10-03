@@ -202,6 +202,45 @@ def reviewed_contact_window_research() -> dict:
     return {"cases":12,"sampleHz":60,"bodyCrossingFrames":33,"productionAdopted":False}
 
 
+def reviewed_reactive_first_strike() -> dict:
+    relative = "artifacts/duel-reactive-first-strike-release-r1.json"
+    path = ROOT / relative
+    if not path.exists():
+        return {}
+    if file_sha256(path) != "9855d7b55f729b39a0db58b7911f18922b1c0b4481dfcca47c198044e0be9931":
+        raise ValueError("Reviewed first-strike release changed")
+    doc = read_json(relative)
+    expected = {"status":"first_body_reaction_reviewed_flat_stage","revision":"zl_phrase_hit_v4",
+                "production_adopted":False,"naturalness_accepted":False,"full_battle_integrated":False,
+                "later_damage_windows_integrated":False,"next_phrase_graph_integrated":False,
+                "first_body_window_integrated":True,"paired_reaction_contract_verified":True,
+                "deform_bones":128,"skin_meshes":32,"authoring_frames":480,
+                "finite_self_forearm_crossings_detected":False,"expected_weapon_body_crossing_frames":6,
+                "legacy_all_weapon_clearance_gate_passed":False,"shared_response_prefix_last_frame":100,
+                "contract_checks":183,"intent_dt_cases":15,"rendered_engine_input_events":4,
+                "rendered_skin_cpu_bakes":288,"asset_gpu_bone_observations":1024,
+                "asset_registered_skin_cpu_bakes":256,"paired_pole_observations":3840,
+                "compiled_skin_comparisons":288,"compiled_skin_maximum_reference_error_m":0.0}
+    if any(doc.get(key) != value for key,value in expected.items()):
+        raise ValueError("First-strike prototype exceeds reviewed scope")
+    for name,digest in doc["sources"].items():
+        source=(ROOT/name).resolve();source.relative_to(ROOT.resolve())
+        if file_sha256(source) != digest:
+            raise ValueError("First-strike evidence changed")
+    mesh=read_json("artifacts/zl-hit-recoil-mesh-r4.json")
+    contract=read_json("artifacts/duel-phrase-reactive-contract-r3.json")
+    gpu=read_json("artifacts/duel-reactive-gpu-r3.json")
+    if (mesh.get("checked_frames") != 480 or mesh.get("source_unchanged") is not True
+            or mesh.get("forearm_pairs_with_crossing_frames") != {}
+            or mesh.get("weapon_pairs_with_crossing_frames") != {"A_WeaponMesh -> B_TorsoMesh":list(range(100,106))}
+            or mesh.get("failures") != ["Actual weapon/head-or-torso surface crossings in authored candidate"]
+            or contract.get("passed") != 183 or contract.get("failures") != []
+            or len(contract.get("cases",[])) != 15 or gpu.get("failures") != []
+            or gpu.get("hero_hp") != [100.0,88.0] or len(gpu.get("registered_skin_cpu_bakes",[])) != 288):
+        raise ValueError("First-strike data does not match actual prototype results")
+    return {"cases":15,"checks":183,"productionAdopted":False,"naturalnessAccepted":False}
+
+
 def reviewed_report(key: str) -> dict:
     name, expected, count = REVIEWED_REPORTS[key]
     path = ROOT / name
@@ -621,6 +660,12 @@ def build() -> dict:
         item["summary"] += " 첫 공격의 방어·빗나감·창날 접촉 후보와 실제 장군 체력의 접촉 창을 별도 검증했습니다."
         item["evidence"] += " 실제 자산3개/각67자세와144·60·30Hz/긴 프레임의12조합에서 창날 접촉만 같은 시각에 한 번 피해를 적용했습니다. 새 명중 후보는 접촉 뒤33표본 교차가 남고, 발의 조기 분기와 공방 끝/시작 불일치도 확인했습니다. 자연스러운 피격·회수·연결과 실전 입력 통합은 미완료입니다."
         item["next"] = "실제 접점에서의 피격·무기 회수, 공유 착지 입구와 다음 공방 디딤/거리 회복을 함께 저작하고 실제 플레이로 검수"
+    reactive = reviewed_reactive_first_strike()
+    if reactive and paired_authoring:
+        item = next(c for c in cards if c["id"] == "paired_fullbody_authoring")
+        item["summary"] = "두 전신 리그의 실제 창날 접촉에서 장군 HP와 피격·무기 회수로 이어지는 별도 조작 시제품을 만들었습니다. 진입 선택·정지·재개와 늦은 선택 거부를 연결했습니다."
+        item["evidence"] = "세 진입과 시간 간격15조합·183검사, 실제 키 입력/렌더9시점의288등록 CPU Skin bake를 확인했습니다. 접촉 시 두 루트·무기·128뼈를 유지합니다. 전체480저장 자세에서 지정 자기 전완 교차는 검출되지 않았고 창날/몸통 교차는 접촉 직후6표본으로 줄었습니다. 자산8시점1,024뼈/256bake와3,840굽힘 방향도 확인했습니다. 유한 표면 검사이며 완전 충돌·후속 피해·전장/지형·원작 자연스러움과 미술 품질은 미완료입니다. 기본 게임에 채택한 결과가 아닙니다."
+        item["next"] = "후속 방어/반격 피해 창과 다음 공방 디딤/출구, 실제 지형·주변 병사의 전투 표시와 전신 리그·미술 품질을 연결"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
