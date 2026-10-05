@@ -271,6 +271,28 @@ def reviewed_three_exchanges() -> dict:
     return {"windows":3,"checks":144,"productionAdopted":False}
 
 
+def reviewed_model_comparison() -> dict:
+    path = ROOT / "artifacts/model-comparison/release-r1.json"
+    if not path.is_file():
+        return {}
+    if hashlib.sha256(path.read_bytes()).hexdigest() != "033dc1583f14b3605a60b5a9ee000bdf743ddb045024cf7adeb5c128ecb54c3d":
+        raise ValueError("Model comparison review changed")
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if (record.get("status") != "static_shape_comparison_reviewed"
+            or record.get("production_adopted") is not False or record.get("rigged") is not False
+            or record.get("texture_quality_comparison") is not False
+            or record.get("meshy_faces") != 326560 or record.get("local_imported_faces") != 1283382
+            or record.get("verified_browser_views") != 4):
+        raise ValueError("Model comparison scope is not verified")
+    for source in record.get("sources", []):
+        item = ROOT / source["path"]
+        if not item.is_file() or hashlib.sha256(item.read_bytes()).hexdigest() != source["sha256"]:
+            raise ValueError("Model comparison source mismatch")
+    if len(record.get("sources", [])) != 27:
+        raise ValueError("Model comparison source coverage is incomplete")
+    return {"meshyFaces":326560, "localFaces":1283382, "views":4}
+
+
 def reviewed_counter_recoil() -> dict:
     relative="artifacts/duel-counter-recoil-release-r1.json";path=ROOT/relative
     if not path.exists():return {}
@@ -742,6 +764,9 @@ def build() -> dict:
         item["summary"]="첫 피격 뒤 여포 반격의 몸통 명중과 장비의 전신 피격·무기 회수를 추가했습니다. 별도 시제품에서 첫 진입과 반격 방어/수비 열기를 선택하며 두 장군의 실제 개인 HP를 유지합니다."
         item["evidence"]="첫3선택×반격2선택×5시간 간격30조합의274검사와 실제 반격 두 경우의 키 입력/렌더704등록 CPU Skin bake를 확인했습니다. 공통4.25초 진입과4.85초 실제 명중에서 두 루트·무기·128뼈를 유지하며 장비 HP91/방어100, 여포88을 확인했습니다. 새 두 자산 각각480저장 자세의 지정 자기 무기/팔·예상 밖 머리 교차는 미검출이고 반격 몸통11표본 교차는 보존합니다. 완전 충돌·다음 그래프·전장/지형과 원작 자연스러움·미술 품질은 미완료이며 기본 게임 채택은 아닙니다."
         item["next"]="출구에서 다음 공방으로 이어지는 이동/디딤, 긴 도약·낙법·재기와 실제 전장/지형·주변 병사, 얼굴/갑주/옷 품질을 확장"
+    model_comparison = reviewed_model_comparison()
+    if model_comparison:
+        cards.append(card("meshy_model_comparison", "여포 Meshy·로컬 생성 모델 품질 비교", "graphics", "in_progress", "M05.1 · 외형 후보", "같은 여포 원화에서 Meshy 6 Lite와 공개 Hunyuan3D 2.1의 실제 로컬 외형을 만들었습니다. Meshy 형상과 PBR GLB를 다운로드하고 Blender 후보로 가져왔습니다.", "Meshy 326,560삼각형과 로컬 가져오기 1,283,382삼각형을 같은 회색 재질·조명·정사영 카메라의4방향으로 비교했습니다. 이번 한 사례는 Meshy의 얼굴·갑주 경계가 더 선명했습니다. 양쪽 깃·손/천 구조는 미완성이며 로컬 텍스처 생성·리깅·게임 채택은 미완료입니다. 7.1은 뷰어 확인만 수행해 같은 렌더 비교에서 제외했습니다.", "얼굴·깃·손/관절·의상 구조를 수정하고 전신 리그·실제 공방에서 검수", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
