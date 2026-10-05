@@ -293,6 +293,30 @@ def reviewed_model_comparison() -> dict:
     return {"meshyFaces":326560, "localFaces":1283382, "views":4}
 
 
+def reviewed_model_colour() -> bool:
+    path = ROOT / "artifacts/model-comparison/local-color-r1/release-r1.json"
+    if not path.is_file():
+        return False
+    if hashlib.sha256(path.read_bytes()).hexdigest() != "13c57014dcea0695787e471a5f0793829d55eecb5791ab92e73136f5b5d202e5":
+        raise ValueError("Local colour review changed")
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if (record.get("status") != "uv_projection_colour_reviewed"
+            or record.get("geometry_unchanged") is not True
+            or record.get("hunyuan_paint_executed") is not False
+            or record.get("generated_pbr_maps") is not False
+            or record.get("production_adopted") is not False or record.get("rigged") is not False
+            or record.get("triangles") != 1283382 or record.get("colour_images") != 4
+            or record.get("viewer_fullscreen_verified") is not True
+            or record.get("viewer_model_switch_verified") is not True
+            or len(record.get("sources", [])) != 22):
+        raise ValueError("Local colour scope is not verified")
+    for source in record["sources"]:
+        item = ROOT / source["path"]
+        if not item.is_file() or hashlib.sha256(item.read_bytes()).hexdigest() != source["sha256"]:
+            raise ValueError("Local colour source mismatch")
+    return True
+
+
 def reviewed_counter_recoil() -> dict:
     relative="artifacts/duel-counter-recoil-release-r1.json";path=ROOT/relative
     if not path.exists():return {}
@@ -767,6 +791,11 @@ def build() -> dict:
     model_comparison = reviewed_model_comparison()
     if model_comparison:
         cards.append(card("meshy_model_comparison", "여포 Meshy·로컬 생성 모델 품질 비교", "graphics", "in_progress", "M05.1 · 외형 후보", "같은 여포 원화에서 Meshy 6 Lite와 공개 Hunyuan3D 2.1의 실제 로컬 외형을 만들었습니다. Meshy 형상과 PBR GLB를 다운로드하고 Blender 후보로 가져왔습니다.", "Meshy 326,560삼각형과 로컬 가져오기 1,283,382삼각형을 같은 회색 재질·조명·정사영 카메라의4방향으로 비교했습니다. 이번 한 사례는 Meshy의 얼굴·갑주 경계가 더 선명했습니다. 양쪽 깃·손/천 구조는 미완성이며 로컬 텍스처 생성·리깅·게임 채택은 미완료입니다. 7.1은 뷰어 확인만 수행해 같은 렌더 비교에서 제외했습니다.", "얼굴·깃·손/관절·의상 구조를 수정하고 전신 리그·실제 공방에서 검수", "focus"))
+    if model_comparison and reviewed_model_colour():
+        item = next(c for c in cards if c["id"] == "meshy_model_comparison")
+        item["summary"] += " 로컬 형상을 유지한4방향 색 참고 이미지의UV투영 컬러 후보와 실제3D 작업실도 추가했습니다."
+        item["evidence"] = item["evidence"].replace("로컬 텍스처 생성·리깅·게임 채택은 미완료", "로컬 전용 PBR생성·리깅·게임 채택은 미완료")
+        item["evidence"] += " 새 컬러GLB/Blender를 재로딩하고 정점·면 연결 보존과 모든 내보낸 정점의 원본 대응을 확인했습니다. 실제 뷰어의 회전·확대·재질·모델 전환·전체 화면을 조작했습니다. 색은AI참고 이미지 투영으로 Hunyuan전용 PBR생성 결과와 구분하며 색 접합·미술 수정은 남습니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
