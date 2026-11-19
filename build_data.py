@@ -805,6 +805,18 @@ def build() -> dict:
             if file_sha256(proof.parent / name) != evidence["sha256"]:
                 raise ValueError("Pass duel movie differs from the reviewed capture")
         cards.append(card("pass_duel", "호뢰관의 여명 · 여포와 장비의 15초 공방", "graphics", "complete", "독립 일기토 장면", "원화 기반 얼굴과 붉은 갑주를 두 손 무기 리그에 연결했습니다. 여포가 도약하고 장비가 옆으로 빠진 뒤 서로 자리를 바꿔 다시 맞섭니다.", "실제 엔진 리플레이 15초, 고정 30fps. 수평 경로는 여포 11.4m, 장비 9.5m였습니다. 두 명중과 두 무기 받기, G/F 네 조합의 HP 분기를 확인했습니다. 지난 영상과 첫 명중을 맞춘 좌우 비교를 제작했습니다.", "손·어깨·옷 변형, 장비 외형과 일반 전투 통합을 개선", "focus"))
+    duel_dir = ROOT / "artifacts/qinglong/review"
+    duo = [("foot", "a06bb53fc7574c32c29d03e36302fa2ede06d030ed6ac6d1bf08cfeba306a4a5"),
+           ("mounted", "98e9702630cb2c81514dcb9e9549490907185dbbb92eae4c5995ff48ba201035")]
+    if all((duel_dir / (mode + "-verified.json")).is_file() for mode, _ in duo):
+        for mode, digest in duo:
+            proof = duel_dir / (mode + "-verified.json")
+            if file_sha256(proof) != digest:
+                raise ValueError("Qinglong comparison record changed")
+            for name, details in json.loads(proof.read_text(encoding="utf-8"))["videos"].items():
+                if file_sha256(duel_dir / name) != details["sha256"]:
+                    raise ValueError("Qinglong capture differs from the review")
+        cards.append(card("qinglong_duel", "관우와 여포 · 보전과 기마전", "graphics", "complete", "독립 일기토 장면", "원화에서 관우 전신과 청룡언월도를 제작했습니다. 비껴 세운 사선 베기, 한 손 흘림베기, 높은 허초와 되감아 베기를 두 가지 전장에서 플레이합니다.", "각 15초의 보전·기마전을 직전 호뢰관 영상과 같은 시간으로 비교했습니다. 무기 받기와 등갑 스침, 몸통 명중의 반응과 실제 공방·재시작 버튼을 확인했습니다.", "기병 군단과 전장 지형으로 확대하고 손·무기·의상 접촉을 정교화", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
