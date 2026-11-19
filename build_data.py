@@ -915,6 +915,21 @@ def build() -> dict:
         roster_card["summary"] = f"목표 {current_roster['target']}명 중 {len(verified_ids)}명의 실제 출전을 검증했습니다. 손책과 태사자가 합류했고, 자유 대전에서는 양쪽에 각각 장수를 선택합니다."
         roster_card["evidence"] = "자유 대전 9명의 순서 대진 72개를 보전·기마전 144경기로 검증했습니다. 좌우 교대 비교 72건에서 승자·잔여 체력·종료 시각이 일치했습니다. 황충과 태사자의 양쪽 선제 사격과 사격 끄기를 확인했습니다."
         roster_card["next"] = "후속 무장의 고유 외형·무기·공방을 제작하고 같은 대진 검사로 확대합니다."
+    zhangfei_dir = brothers_dir / "zhangfei"
+    zhangfei_proof = zhangfei_dir / "verified.json"
+    if zhangfei_proof.is_file():
+        ledger = read_json("docs/milestones.json").get("milestones", [])
+        release = next((row.get("zhangfei_remodel") for row in ledger if row.get("id") == "M05.1"), None)
+        if not release or file_sha256(zhangfei_proof) != release.get("proof_sha256"):
+            raise ValueError("Zhang Fei release proof and milestone ledger differ")
+        evidence = json.loads(zhangfei_proof.read_text(encoding="utf-8"))
+        for key in ("foot", "mounted", "compare"):
+            if file_sha256(zhangfei_dir / (key + ".mp4")) != evidence["media"][key]["sha256"]:
+                raise ValueError("Zhang Fei review footage changed")
+        duel_card = next(c for c in cards if c["id"] == "qinglong_duel")
+        duel_card["summary"] = "관우와 여포가 맞붙으면 장비가 먼저 난입하고 유비가 뒤늦게 합류합니다. 장비의 눈과 수염, 머리채, 찰갑과 견갑, 장팔사모를 다시 제작했습니다."
+        duel_card["evidence"] = "보전에서 장비의 양발 좌우 간격은 최소 37.5cm였습니다. 여포의 최대 후퇴는 관우·장비 구간 0.30m, 유비 합류 후 합공 구간 2.07m였습니다. 장비의 자유 대전 44경기를 끝까지 확인했습니다."
+        duel_card["next"] = "장비의 고함과 피격에 맞춘 눈·입 표정 및 수염의 움직임"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
