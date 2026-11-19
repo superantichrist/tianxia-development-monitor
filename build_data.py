@@ -796,6 +796,15 @@ def build() -> dict:
         item["summary"] += " 로컬 형상을 유지한4방향 색 참고 이미지의UV투영 컬러 후보와 실제3D 작업실도 추가했습니다."
         item["evidence"] = item["evidence"].replace("로컬 텍스처 생성·리깅·게임 채택은 미완료", "로컬 전용 PBR생성·리깅·게임 채택은 미완료")
         item["evidence"] += " 새 컬러GLB/Blender를 재로딩하고 정점·면 연결 보존과 모든 내보낸 정점의 원본 대응을 확인했습니다. 실제 뷰어의 회전·확대·재질·모델 전환·전체 화면을 조작했습니다. 색은AI참고 이미지 투영으로 Hunyuan전용 PBR생성 결과와 구분하며 색 접합·미술 수정은 남습니다."
+    proof = ROOT / "artifacts/pass-20261120/review/verification.json"
+    if proof.exists():
+        if file_sha256(proof) != "04bd2e6aaff37aba3e598e7b111b8cb4289840d5b979389b2eb6cbc57461506a":
+            raise ValueError("Pass duel capture verification changed")
+        take = read_json("artifacts/pass-20261120/review/verification.json")
+        for name, evidence in take["files"].items():
+            if file_sha256(proof.parent / name) != evidence["sha256"]:
+                raise ValueError("Pass duel movie differs from the reviewed capture")
+        cards.append(card("pass_duel", "호뢰관의 여명 · 여포와 장비의 15초 공방", "graphics", "complete", "독립 일기토 장면", "원화 기반 얼굴과 붉은 갑주를 두 손 무기 리그에 연결했습니다. 여포가 도약하고 장비가 옆으로 빠진 뒤 서로 자리를 바꿔 다시 맞섭니다.", "실제 엔진 리플레이 15초, 고정 30fps. 수평 경로는 여포 11.4m, 장비 9.5m였습니다. 두 명중과 두 무기 받기, G/F 네 조합의 HP 분기를 확인했습니다. 지난 영상과 첫 명중을 맞춘 좌우 비교를 제작했습니다.", "손·어깨·옷 변형, 장비 외형과 일반 전투 통합을 개선", "focus"))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
