@@ -28,6 +28,12 @@ def sha(path):
   for block in iter(lambda:f.read(1048576),b''):h.update(block)
  return h.hexdigest()
 
+def reviewed_source(root,name):
+ name=name.removeprefix('res://')
+ if name in {'src/data.gd','src/duel_director.gd','src/duel_roster.gd'}:
+  return root/'artifacts/field-v4-source'/(Path(name).name+'.txt')
+ return root/name
+
 def read(root):
  def load(name):return json.loads((root/name).read_text(encoding='utf-8-sig'))
  manifest=load('build/Tianxia-flow/build-manifest.json')
@@ -35,7 +41,7 @@ def read(root):
   raise ValueError('Field package differs from its reviewed bytes')
  if manifest.get('source_unchanged_during_export_and_validation') is not True:raise ValueError('Field export did not preserve sources')
  for name,expected in manifest.get('source_sha256',{}).items():
-  path=(root/name).resolve()
+  path=reviewed_source(root,name).resolve()
   if not path.is_relative_to(root.resolve()) or not path.is_file() or sha(path)!=expected:raise ValueError('Field source changed after review: '+name)
  for name,expected in [*MODELS.values(),('assets/animations/duel-exchanges.json',CURVE),('assets/data/officers.json',CATALOG)]:
   if sha(root/name)!=expected or manifest['source_sha256'].get(name)!=expected:raise ValueError('Field model/motion/catalog changed: '+name)
@@ -52,7 +58,7 @@ def read(root):
   name,expected=MODELS[hero['hero']]
   if hero.get('model')!='res://'+name or hero.get('model_sha256')!=expected or hero.get('authored') is not True:raise ValueError('Field gallery model differs from runtime')
  for name,expected in gallery['sources_before'].items():
-  if sha(root/name.removeprefix('res://'))!=expected:raise ValueError('Reused gallery dependency changed: '+name)
+  if sha(reviewed_source(root,name))!=expected:raise ValueError('Reused gallery dependency changed: '+name)
  inputs=reports['inputs']
  if (inputs.get('passed')!=489 or len(inputs.get('cases',[]))!=48 or inputs.get('baseline_runtime') is not True
      or inputs.get('case_filter')!='' or inputs.get('sources_before')!=inputs.get('sources_after')):raise ValueError('Field input suite is incomplete')
@@ -63,7 +69,7 @@ def read(root):
       or row.get('duplicate_resolutions')!=0 or row.get('max_hip_m',1)>.18 or row.get('max_foot_error_m',1)>.025
       or row.get('max_planted_sole_plane_error_m',1)>.003):raise ValueError('Field input/foot evidence failed')
  for name,expected in inputs['sources_before'].items():
-  if sha(root/name.removeprefix('res://'))!=expected:raise ValueError('Reviewed input producer changed: '+name)
+  if sha(reviewed_source(root,name))!=expected:raise ValueError('Reviewed input producer changed: '+name)
  pairs=reports['pairs']
  expected_pairs={a+'->'+b for a in MODELS for b in MODELS if a!=b}
  if pairs.get('passed')!=84 or pairs.get('weighted_lubu') is not True or {row.get('pair') for row in pairs.get('cases',[])}!=expected_pairs:raise ValueError('Field needs all 12 ordered hero pairs')

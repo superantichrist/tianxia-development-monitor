@@ -850,6 +850,18 @@ def build() -> dict:
         duel_card["summary"] = "관우와 여포가 말을 타고 한 합을 겨룬 뒤 각자 크게 선회합니다. 내려베기·한 손 흘림베기·올려베기·허초 뒤 되감아 베기를 서로 다른 자세로 주고받습니다."
         duel_card["evidence"] = "15초 동안 네 번 교차하고 네 번 반격이 명중했습니다. 말 사이 거리 2.6m 이내의 시간은 직전 8.43초에서 1.20초로 줄었습니다. 기마전은 방어 유지 43.31초, 공세 유지 55.91초에 승부가 났습니다."
         duel_card["next"] = "말의 전신 관절과 지형별 발 디딤, 부대가 있는 전장에서의 진로 연결"
+    perception_review = duel_dir / "hulao"
+    perception_proof = perception_review / "mounted-verified.json"
+    if perception_proof.is_file():
+        if file_sha256(perception_proof) != "2e229cf985107f6b8ecd37f7390c2d6561c616d63ce3bb7246b0c7aa3e498d28":
+            raise ValueError("Mounted perception review changed")
+        for name, media in json.loads(perception_proof.read_text(encoding="utf-8"))["media"].items():
+            if file_sha256(perception_review / name) != media["sha256"]:
+                raise ValueError("Mounted perception footage changed")
+        duel_card = next(c for c in cards if c["id"] == "qinglong_duel")
+        duel_card["summary"] = "여포는 관우의 어깨·손·날 끝을 따로 읽고 시선과 화극을 먼저 돌립니다. 일반 방어는 중격에 밀리고 정밀 방어는 반격 기회를 만듭니다. 맞은 장수의 갑주와 피해량이 확대·감속 화면에 표시됩니다."
+        duel_card["evidence"] = "무력 100 여포와 98 관우의 기마전에서 직전 영상 입력을 재현했습니다. 첫 15초의 관우·여포 체력은 78·51.5에서 67·82로 바뀌었고 끝까지 진행한 결과 여포가 체력 59.2로 승리했습니다. 연출 설정 두 가지에서 접촉과 승패가 일치했습니다."
+        duel_card["next"] = "장비 합류 시 두 상대와 호각을 이루고 유비 합류 후 세 번째 공격이 겹칠 때 여포가 밀리는지 실제 다인전으로 검증"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
