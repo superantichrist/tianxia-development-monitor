@@ -862,6 +862,19 @@ def build() -> dict:
         duel_card["summary"] = "여포는 관우의 어깨·손·날 끝을 따로 읽고 시선과 화극을 먼저 돌립니다. 일반 방어는 중격에 밀리고 정밀 방어는 반격 기회를 만듭니다. 맞은 장수의 갑주와 피해량이 확대·감속 화면에 표시됩니다."
         duel_card["evidence"] = "무력 100 여포와 98 관우의 기마전에서 직전 영상 입력을 재현했습니다. 첫 15초의 관우·여포 체력은 78·51.5에서 67·82로 바뀌었고 끝까지 진행한 결과 여포가 체력 59.2로 승리했습니다. 연출 설정 두 가지에서 접촉과 승패가 일치했습니다."
         duel_card["next"] = "장비 합류 시 두 상대와 호각을 이루고 유비 합류 후 세 번째 공격이 겹칠 때 여포가 밀리는지 실제 다인전으로 검증"
+    brothers_dir = duel_dir / "brothers"
+    brothers_proof = brothers_dir / "verified.json"
+    if brothers_proof.is_file():
+        if file_sha256(brothers_proof) != "af5f208d939c3b7646a0ff9f3439472fee25d83bff8c3a2036daa0113ece639e":
+            raise ValueError("Brothers capture verification changed")
+        for mode, evidence in json.loads(brothers_proof.read_text(encoding="utf-8")).items():
+            if file_sha256(brothers_dir / (mode + ".mp4")) != evidence["sha256"]:
+                raise ValueError("Brothers footage changed")
+        duel_card = next(c for c in cards if c["id"] == "qinglong_duel")
+        duel_card["title"] = "호뢰관 · 관우, 장비, 유비의 난입전"
+        duel_card["summary"] = "장비가 장팔사모를 들고 먼저 합류하고 유비가 쌍검을 들고 뒤늦게 가세합니다. 여포는 세 장수를 추적하고 실제 화극이 걸리는 방향에 따라 막거나 밀립니다. 장비의 새 전신은 게임용 108,070개 삼각형과 17개 변형 관절로 제작했습니다."
+        duel_card["evidence"] = "기마 합공에서 두 상대 구간은 여포가 받은 피해 15·반격 피해 10.5, 최대 후퇴 0.34m였습니다. 세 상대 구간은 합공 2.07m, 차례 공격 0.70m였습니다. 보전 600프레임에서 발·팔꿈치 좌우 역전은 0회였습니다."
+        duel_card["next"] = "1단계 후보 54명. 실제 일기토 참여 검증 6명(기존 마초 포함). 황충 선제 사격 켬·끔을 구현했으며 후속 무장의 고유 모델·무기·동작을 제작합니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
