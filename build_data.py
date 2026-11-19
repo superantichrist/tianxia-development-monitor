@@ -875,6 +875,24 @@ def build() -> dict:
         duel_card["summary"] = "장비가 장팔사모를 들고 먼저 합류하고 유비가 쌍검을 들고 뒤늦게 가세합니다. 여포는 세 장수를 추적하고 실제 화극이 걸리는 방향에 따라 막거나 밀립니다. 장비의 새 전신은 게임용 108,070개 삼각형과 17개 변형 관절로 제작했습니다."
         duel_card["evidence"] = "기마 합공에서 두 상대 구간은 여포가 받은 피해 15·반격 피해 10.5, 최대 후퇴 0.34m였습니다. 세 상대 구간은 합공 2.07m, 차례 공격 0.70m였습니다. 보전 600프레임에서 발·팔꿈치 좌우 역전은 0회였습니다."
         duel_card["next"] = "1단계 후보 54명. 실제 일기토 참여 검증 6명(기존 마초 포함). 황충 선제 사격 켬·끔을 구현했으며 후속 무장의 고유 모델·무기·동작을 제작합니다."
+    pair_dir = duel_dir / "changshan"
+    pair_proof = pair_dir / "verified.json"
+    if pair_proof.is_file():
+        if file_sha256(pair_proof) != "3ee7e22b723ca49f578db7fa301f18b405214301f70ff8e421085ffcfc7b3502":
+            raise ValueError("Zhao Yun and Dian Wei recording evidence changed")
+        media = json.loads(pair_proof.read_text(encoding="utf-8"))
+        for key in ("zhaoyun", "dianwei", "compare"):
+            if file_sha256(pair_dir / (key + ".mp4")) != media[key]["sha256"]:
+                raise ValueError("Officer-duel video changed")
+        roster = read_json("docs/DUEL_ROSTER_STAGE1.json")
+        known = [row for row in roster["officers"] if row["status"] == "verified_in_duel"]
+        if len({row["reference_id"] for row in known}) != roster["verified_in_duel"]:
+            raise ValueError("Stage-one roster count disagrees with verified officer identities")
+        duel_card["next"] = "일기토 장수 확대는 장수 50명 카드에서 추적합니다."
+        cards.append(card("duel_roster_stage1", "고유 모델 일기토 장수 50명", "graphics", "in_progress", "일기토 1단계",
+                          f"목표 {roster['target']}명 중 {len(known)}명의 실제 일기토 참여를 검증했습니다. 장수 대전에 조운·전위가 합류했습니다.",
+                          "조운과 전위의 보전·기마전 네 경기가 체력 소진으로 끝났습니다. 조운의 창 회수와 후속 찌르기, 전위의 좌우 철극별 접촉과 선공 입력을 검사했습니다.",
+                          "후속 무장을 개별 외형과 고유 동작으로 제작하고 실제 출전·접촉·승패를 확인합니다."))
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
