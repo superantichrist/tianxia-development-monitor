@@ -895,6 +895,26 @@ def build() -> dict:
                           f"목표 {roster['target']}명 중 {len(known)}명의 실제 일기토 참여를 검증했습니다. 장수 대전에 조운·전위가 합류했습니다.",
                           "조운과 전위의 보전·기마전 네 경기가 체력 소진으로 끝났습니다. 조운의 창 회수와 후속 찌르기, 전위의 좌우 철극별 접촉과 선공 입력을 검사했습니다.",
                           "후속 무장을 개별 외형과 고유 동작으로 제작하고 실제 출전·접촉·승패를 확인합니다."))
+    free_dir = duel_dir / "shenting"
+    free_proof = free_dir / "verified.json"
+    if free_proof.is_file():
+        if file_sha256(free_proof) != "75cda8e8649dfe6fca305969fe0ff722994ac1b7911dcb1abe225102e97bd602":
+            raise ValueError("Free matchup evidence changed")
+        review = json.loads(free_proof.read_text(encoding="utf-8"))
+        for key in ("mounted", "foot", "archers"):
+            if file_sha256(free_dir / (key + ".mp4")) != review["media"][key]["sha256"]:
+                raise ValueError("Free matchup movie changed")
+        current_roster = read_json("docs/DUEL_ROSTER_STAGE1.json")
+        verified_ids = [row["reference_id"] for row in current_roster["officers"] if row["status"] == "verified_in_duel"]
+        if len(set(verified_ids)) != len(verified_ids) or len(verified_ids) != current_roster["verified_in_duel"]:
+            raise ValueError("Free duel roster must contain distinct verified identities")
+        roster_card = next((c for c in cards if c["id"] == "duel_roster_stage1"), None)
+        if roster_card is None:
+            roster_card = card("duel_roster_stage1", "고유 모델 일기토 장수 50명", "graphics", "in_progress", "일기토 1단계", "", "", "")
+            cards.append(roster_card)
+        roster_card["summary"] = f"목표 {current_roster['target']}명 중 {len(verified_ids)}명의 실제 출전을 검증했습니다. 손책과 태사자가 합류했고, 자유 대전에서는 양쪽에 각각 장수를 선택합니다."
+        roster_card["evidence"] = "자유 대전 9명의 순서 대진 72개를 보전·기마전 144경기로 검증했습니다. 좌우 교대 비교 72건에서 승자·잔여 체력·종료 시각이 일치했습니다. 황충과 태사자의 양쪽 선제 사격과 사격 끄기를 확인했습니다."
+        roster_card["next"] = "후속 무장의 고유 외형·무기·공방을 제작하고 같은 대진 검사로 확대합니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
