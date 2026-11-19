@@ -817,6 +817,26 @@ def build() -> dict:
                 if file_sha256(duel_dir / name) != details["sha256"]:
                     raise ValueError("Qinglong capture differs from the review")
         cards.append(card("qinglong_duel", "관우와 여포 · 보전과 기마전", "graphics", "complete", "독립 일기토 장면", "원화에서 관우 전신과 청룡언월도를 제작했습니다. 비껴 세운 사선 베기, 한 손 흘림베기, 높은 허초와 되감아 베기를 두 가지 전장에서 플레이합니다.", "각 15초의 보전·기마전을 직전 호뢰관 영상과 같은 시간으로 비교했습니다. 무기 받기와 등갑 스침, 몸통 명중의 반응과 실제 공방·재시작 버튼을 확인했습니다.", "기병 군단과 전장 지형으로 확대하고 손·무기·의상 접촉을 정교화", "focus"))
+    live_review = duel_dir / "live"
+    live_records = {"foot": "8101853a0e744219b009f0d5a77bd72e35c0b56a9820b64eddf9d131707f3317",
+                    "mounted": "714d06d8d1d0747b2a2601465479351b72dfec1f54491df3b7cae9495406ee25",
+                    "mounted-12-27": "366e0e038f1bac68fdacde220c831d6176b879f9e81726a968e58352de7806de"}
+    outcomes = ROOT / "artifacts/qinglong-live/outcomes.json"
+    if outcomes.is_file() and all((live_review / (name + "-verified.json")).is_file() for name in live_records):
+        for name, digest in live_records.items():
+            record_path = live_review / (name + "-verified.json")
+            if file_sha256(record_path) != digest:
+                raise ValueError("Continuous duel movie verification changed")
+            for filename, info in json.loads(record_path.read_text(encoding="utf-8"))["media"].items():
+                if file_sha256(live_review / filename) != info["sha256"]:
+                    raise ValueError("Continuous duel movie changed")
+        results = json.loads(outcomes.read_text(encoding="utf-8"))
+        if len(results) != 4 or not all(r["elapsed"] > 15 and r["hp"][1-r["winner"]] == 0 for r in results):
+            raise ValueError("Duel outcome evidence is incomplete")
+        duel_card = next(c for c in cards if c["id"] == "qinglong_duel")
+        duel_card["summary"] = "관우와 여포가 체력이 다할 때까지 겨룹니다. 기마전에서는 두 말이 상대와의 거리에 맞춰 속도를 줄이고 방향을 바꿔 받아치거나 물러납니다."
+        duel_card["evidence"] = "보전·기마전 4경기가 44.73~91.63초에 실제 HP로 끝났습니다. 경기 12~27초 연속 녹화, 정확한 받아치기와 1회 승부수, 마우스 재시작을 확인했습니다. 첫 15초 중 말 사이 수평 거리 2.6m 미만은 이전 3.97초에서 8.43초가 됐습니다."
+        duel_card["next"] = "말의 관절과 피격·승리 동작 개선, 지형 및 일반 전투 연결"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
