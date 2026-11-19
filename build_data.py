@@ -930,6 +930,25 @@ def build() -> dict:
         duel_card["summary"] = "관우와 여포가 맞붙으면 장비가 먼저 난입하고 유비가 뒤늦게 합류합니다. 장비의 눈과 수염, 머리채, 찰갑과 견갑, 장팔사모를 다시 제작했습니다."
         duel_card["evidence"] = "보전에서 장비의 양발 좌우 간격은 최소 37.5cm였습니다. 여포의 최대 후퇴는 관우·장비 구간 0.30m, 유비 합류 후 합공 구간 2.07m였습니다. 장비의 자유 대전 44경기를 끝까지 확인했습니다."
         duel_card["next"] = "장비의 고함과 피격에 맞춘 눈·입 표정 및 수염의 움직임"
+    tongguan_dir = duel_dir / "tongguan"
+    tongguan_proof = tongguan_dir / "verified.json"
+    if tongguan_proof.is_file():
+        release = milestones.get("M05.1", {}).get("tongguan_officers")
+        if not release or file_sha256(tongguan_proof) != release.get("proof_sha256"):
+            raise ValueError("Tongguan evidence and milestone ledger differ")
+        proof = json.loads(tongguan_proof.read_text(encoding="utf-8"))
+        for key in ("tiger", "axe", "rider"):
+            if file_sha256(tongguan_dir / (key + ".mp4")) != proof["media"][key]["sha256"]:
+                raise ValueError("Tongguan footage changed")
+        roster = read_json("docs/DUEL_ROSTER_STAGE1.json")
+        implemented = {r["reference_id"] for r in roster["officers"] if r["status"] == "verified_in_duel"}
+        matrix = proof["matrix"]
+        if len(implemented) != roster["verified_in_duel"] or matrix["officers"] != release["free_roster"]:
+            raise ValueError("Tongguan roster disagrees with played matches")
+        roster_card = next(c for c in cards if c["id"] == "duel_roster_stage1")
+        roster_card["summary"] = f"목표 {roster['target']}명 중 {len(implemented)}명의 출전을 검증했습니다. 허저의 대도, 서황의 도끼, 마초의 서량 기창에 고유 공방을 적용했습니다."
+        roster_card["evidence"] = f"자유 대전 {matrix['officers']}명의 순서 대진 {matrix['ordered_pairs']}개를 보전·기마전 {matrix['bouts']}경기로 확인했습니다. 좌우를 교대한 {matrix['matched_swaps']}개 비교에서 승자와 잔여 체력이 일치했습니다. 기마 망토와 양손 그립을 따로 검사했습니다."
+        roster_card["next"] = "연의의 특징이 드러나는 무장별 모델과 공방을 추가합니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
