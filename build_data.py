@@ -837,6 +837,19 @@ def build() -> dict:
         duel_card["summary"] = "관우와 여포가 체력이 다할 때까지 겨룹니다. 기마전에서는 두 말이 상대와의 거리에 맞춰 속도를 줄이고 방향을 바꿔 받아치거나 물러납니다."
         duel_card["evidence"] = "보전·기마전 4경기가 44.73~91.63초에 실제 HP로 끝났습니다. 경기 12~27초 연속 녹화, 정확한 받아치기와 1회 승부수, 마우스 재시작을 확인했습니다. 첫 15초 중 말 사이 수평 거리 2.6m 미만은 이전 3.97초에서 8.43초가 됐습니다."
         duel_card["next"] = "말의 관절과 피격·승리 동작 개선, 지형 및 일반 전투 연결"
+    charge_review = duel_dir / "charge"
+    proof = charge_review / "mounted-verified.json"
+    if proof.is_file():
+        if file_sha256(proof) != "fa06841d194153b0c999b68a5441144ecd4d1567759871a64f3852d654982c77":
+            raise ValueError("Mounted pass review record changed")
+        record = json.loads(proof.read_text(encoding="utf-8"))
+        for name, media in record["media"].items():
+            if file_sha256(charge_review / name) != media["sha256"]:
+                raise ValueError("Mounted pass footage changed")
+        duel_card = next(c for c in cards if c["id"] == "qinglong_duel")
+        duel_card["summary"] = "관우와 여포가 말을 타고 한 합을 겨룬 뒤 각자 크게 선회합니다. 내려베기·한 손 흘림베기·올려베기·허초 뒤 되감아 베기를 서로 다른 자세로 주고받습니다."
+        duel_card["evidence"] = "15초 동안 네 번 교차하고 네 번 반격이 명중했습니다. 말 사이 거리 2.6m 이내의 시간은 직전 8.43초에서 1.20초로 줄었습니다. 기마전은 방어 유지 43.31초, 공세 유지 55.91초에 승부가 났습니다."
+        duel_card["next"] = "말의 전신 관절과 지형별 발 디딤, 부대가 있는 전장에서의 진로 연결"
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
