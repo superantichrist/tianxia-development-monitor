@@ -13,6 +13,7 @@ import math
 import re
 from pathlib import Path
 import field_review
+import duel_gallery
 import battle_review
 
 HERE = Path(__file__).resolve().parent
@@ -636,7 +637,7 @@ def _validate_m051_capture(capture: dict, video: dict, version: str) -> None:
             raise ValueError("M05.1 requires visual review inside the attacking bout of " + bout["hero"])
 
 
-def build() -> dict:
+def build(current_gallery=None) -> dict:
     if not (ROOT / "docs/milestones.json").is_file():
         raise FileNotFoundError("Run this generator in the complete development workspace; published snapshots do not contain private source records")
     source = read_json("docs/milestones.json")
@@ -698,7 +699,7 @@ def build() -> dict:
     hero_animation_checks = int(hero_animation["passed"])
     soldier_animation_checks = int(soldier_animation["passed"])
     soldier_pose_samples = int(soldier_animation["pose_samples"])
-    roster = read_json("assets/data/officers.json")
+    roster = current_gallery if current_gallery is not None else duel_gallery.prepare(ROOT)[0]
     officers = roster.get("officers", [])
     if not officers or len({row.get("id") for row in officers}) != len(officers):
         raise ValueError("Officer catalog requires distinct reference IDs")
@@ -709,6 +710,8 @@ def build() -> dict:
     if (roster.get("count") != roster_metrics["referenceEntries"] or roster.get("illustrated") != roster_metrics["illustrations"]
             or roster.get("duel_playable") != roster_metrics["duelPlayable"] or roster.get("name_ko_count") != roster_metrics["koreanNames"]):
         raise ValueError("Officer catalog count mismatch")
+    if roster.get("gallery_revision"):
+        roster_metrics["revision"] = roster["gallery_revision"]
     roster_count, portrait_count, model_count, duel_count = (roster_metrics[key] for key in ("referenceEntries", "illustrations", "models", "duelPlayable"))
     original = read_json("tools/modding/evidence/2026-09-10-runtime/summary.json")
     original_metrics = {key: number(original.get("csv_metrics", {}).get(key)) for key in (
@@ -949,6 +952,23 @@ def build() -> dict:
         roster_card["summary"] = f"목표 {roster['target']}명 중 {len(implemented)}명의 출전을 검증했습니다. 허저의 대도, 서황의 도끼, 마초의 서량 기창에 고유 공방을 적용했습니다."
         roster_card["evidence"] = f"자유 대전 {matrix['officers']}명의 순서 대진 {matrix['ordered_pairs']}개를 보전·기마전 {matrix['bouts']}경기로 확인했습니다. 좌우를 교대한 {matrix['matched_swaps']}개 비교에서 승자와 잔여 체력이 일치했습니다. 기마 망토와 양손 그립을 따로 검사했습니다."
         roster_card["next"] = "연의의 특징이 드러나는 무장별 모델과 공방을 추가합니다."
+    if development.get("currentRevision")=="field-v4":
+        cards = field_review.update_cards(cards)
+    jinfan = milestones.get("M05.1", {}).get("jinfan_ganning")
+    if jinfan:
+        proof_dir = duel_dir / "jinfan"
+        report = json.loads((proof_dir / "verified.json").read_text(encoding="utf-8"))
+        for key in ("mounted", "foot"):
+            if file_sha256(proof_dir / (key + ".mp4")) != report["media"][key]["sha256"]:
+                raise ValueError("Gan Ning battle footage changed")
+        m = report["matrix"]
+        progress = next(c for c in cards if c["id"] == "duel_roster_stage1")
+        progress["summary"] = f"목표 50명 중 {m['officers']}명 출전. 감녕은 선제 사격 뒤 활을 메고 한 손에 환두도를 듭니다. 비스듬히 돌입할 때 허리의 청동 방울이 울립니다."
+        progress["evidence"] = f"보전·기마전 {m['bouts']}경기와 좌우 교대 {m['matched_swaps']}건을 확인했습니다. 감녕의 선제 사격 켬·끔, 무기 교대 중 일시정지와 재시작을 실제 게임에서 검사했습니다."
+        art_card = next(c for c in cards if c["id"] == "officer_portraits")
+        art_card["summary"] = f"공개 갤러리에 장수 원화 {portrait_count}장을 등록했습니다. 감녕·태사자·허저·서황의 그림도 이름 또는 참고 ID로 열 수 있습니다."
+        art_card["evidence"] = f"실제 장수 대전 선택 화면을 참고 ID와 대조했습니다. 공개 명부는 원화 {portrait_count}명, 모델과 일기토 {duel_count}명입니다."
+        art_card["next"] = "검증한 무장과 원화를 명부의 해당 참고 ID에 이어 등록합니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
@@ -985,6 +1005,12 @@ def build() -> dict:
                 row.update(current="기본4장수 이동 전장 일기토·세계 지지 발·HP/자연 승부·장비→여포 변형 표면 타격",gap="다른 방향 정밀 타격·더 다양한 공방·몸통 경직·연속 충돌·전장 지형/병사 회피",next="공격 준비/회수 멈춤과 공방 교대 리듬 개선")
         for row in public_milestones:
             if row["id"]=="M05.1":row["description"]="이동하는 기본 일기토·여포 가중 허리/망토·실제 변형 복부 타격과 새 실행본 검증. 긴 버팀 자세·다른 방향 충돌·의상 품질 제작 중. 보존 통합 영상의 비공개 업로드는 대기 중이며 새 실행본과 촬영 시점을 구분합니다."
+    if jinfan:
+        gallery_area = next(r for r in parity if r["area"]=="유니크 장수·원화")
+        gallery_area.update(gap="50명 목표까지 장수별 모델·공방·출전 확대 및 명부의 미검토 인물",
+                            next="연의에 근거한 장수별 외형과 무기 제작, 보전·기마전 검증",level="원화 20명 · 자유 대전 13명")
+        duel_area = next(r for r in parity if r["area"]=="장군 일기토")
+        duel_area.update(current="장수 13명의 보전·기마 자유 대전, 호뢰관 난입전, 활·근접 무기 교대와 접촉 판정")
     return {
         "schemaVersion":1,
         "updatedAt":now,
@@ -995,7 +1021,7 @@ def build() -> dict:
         "statuses":[{"id":"in_progress", "label":"진행 중", "description":"현재 제작·통합·검증 중"}, {"id":"complete", "label":"검증 완료", "description":"카드에 적힌 범위의 근거 확인"}, {"id":"planned", "label":"다음 계획", "description":"아직 완성되지 않은 기능"}, {"id":"external", "label":"외부 검증 대기", "description":"원작 실행 등 외부 환경 확인 필요"}],
         "domains":[{"id":"battle","label":"전투·물리"},{"id":"campaign","label":"캠페인"},{"id":"graphics","label":"그래픽·동작"},{"id":"performance","label":"최적화"},{"id":"modding","label":"모드·튜닝"},{"id":"tooling","label":"엔진·도구"}],
         "battlefieldPrototype":battlefield_prototype,
-        "cards":field_review.update_cards(cards) if development.get("currentRevision")=="field-v4" else cards, "parity":parity, "milestones":public_milestones,
+        "cards":cards, "parity":parity, "milestones":public_milestones,
         "renderBenchmark":{"milestone":"M03.1", "nearFps":number(bench.get("average_fps")), "beforeNearFps":number(m03.get("benchmark_near", {}).get("average_fps")), "wideFps":number(wide.get("average_fps")), "nearP99Ms":number(bench.get("p99_process_frame_ms")), "initialSoldiers":number(bench.get("initial_soldiers")), "gpuChecks":number(m031.get("checks", {}).get("render_lod_gpu")), "conditions":"RTX 2080 Ti · 1600×900 · 최고 품질 · VSync 해제 · 시점별 약 10초 1회", "scope":"개별 병사 물리 통합 전 렌더 측정입니다. 모든 장면의 FPS 보장이 아닙니다. 30FPS 고정 녹화는 성능 측정과 별개입니다."},
         "physicsBenchmark":physics_metrics,
         "originalGameRuntime":original_public,
@@ -1047,9 +1073,11 @@ def validate(data: dict) -> None:
         elif any(development.get(key) != value for key,value in expected.items()):
             raise ValueError("Public development fields differ from the reviewed snapshot contract")
         catalog = data.get("officerCatalog")
-        if catalog is not None and (catalog.get("illustrations") != 16 or catalog.get("models") != 4
-                                    or catalog.get("duelPlayable") != 4 or catalog.get("referenceEntries") != 1000):
-            raise ValueError("Public catalog must distinguish 16 portraits, four playable/models, and 1,000 reference IDs")
+        if catalog is not None:
+            counts = tuple(catalog.get(k) for k in ("illustrations","models","duelPlayable","referenceEntries"))
+            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000)}
+            if counts != revisions.get(catalog.get("revision")):
+                raise ValueError("Public catalog must distinguish portraits, models, playable officers and reference IDs in the reviewed release")
     for milestone_id in ("M05", "M05.1"):
         if any(m["id"] == milestone_id and m["status"] == "complete" for m in data["milestones"]):
             proof = data.get("milestoneCompletion", {}).get(milestone_id, {})
@@ -1062,6 +1090,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="Validate existing snapshot without changing it")
     args = parser.parse_args()
+    public_gallery,images=None,{}
+    if (ROOT/"docs/milestones.json").exists() and (ROOT/"assets/data/officers.json").exists():
+        public_gallery,images=duel_gallery.prepare(ROOT)
+        if args.check:duel_gallery.sync(HERE,public_gallery,images,check=True)
     if args.check:
         data = json.loads((HERE / "monitor-data.json").read_text(encoding="utf-8"))
         validate(data)
@@ -1075,8 +1107,9 @@ def main() -> None:
             raise ValueError("JSON / JS snapshot mismatch")
         print(f"Public snapshot OK: {len(data['cards'])} cards, {len(data['parity'])} feature areas; JSON / JS match")
         return
-    data = build()
+    data = build(public_gallery)
     validate(data)
+    if images:duel_gallery.sync(HERE,public_gallery,images)
     content = json.dumps(data, ensure_ascii=False, indent=2)
     (HERE / "monitor-data.json").write_text(content + "\n", encoding="utf-8")
     (HERE / "monitor-data.js").write_text("window.MONITOR_DATA = " + content + ";\n", encoding="utf-8")

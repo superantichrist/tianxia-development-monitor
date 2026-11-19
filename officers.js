@@ -51,7 +51,14 @@
     $('portrait-han').textContent = row.name_ko ? row.name_han : '한글 이름 검토 대기';
     $('portrait-direction').textContent = row.art_direction || '인물별 시각적 특징 검토 중';
     $('portrait-status').replaceChildren(...status(row).childNodes);
-    $('portrait-reference').textContent = row.id;
+    const reference = $('portrait-reference');
+    reference.textContent = row.id;
+    if (Number.isInteger(row.romance_chapter) && row.romance_chapter > 0 && row.romance_chapter <= 120) {
+      const link = node('a', '', '삼국지연의 ' + row.romance_chapter + '회');
+      link.href = 'https://zh.wikisource.org/wiki/三國演義/第' + String(row.romance_chapter).padStart(3, '0') + '回';
+      link.target = '_blank'; link.rel = 'noopener noreferrer';
+      reference.append(' · ', link);
+    }
     $('portrait-size').textContent = `${number(row.portrait.width)} × ${number(row.portrait.height)} PNG · 독자 생성 원화`;
     $('portrait-original').href = imagePath(row);
     $('portrait-dialog').showModal();
@@ -109,7 +116,7 @@
     const duelCell = node('td'); duelCell.append(chip(row.duel_playable ? '선택 · 대결 가능' : '미구현', row.duel_playable ? 'duel' : ''));
     const review = node('td', 'review-note');
     if (row.homonym_group_size > 1) review.append(chip(`동일 이름 ${row.homonym_group_size}개 ID`, 'review'), node('br'));
-    review.append(document.createTextNode('연의·정사 구분 검토 중'));
+    review.append(document.createTextNode(row.romance_chapter ? '연의 ' + row.romance_chapter + '회 확인' : '연의·정사 구분 검토 중'));
     tr.append(artCell, modelCell, duelCell, review);
     return tr;
   }
