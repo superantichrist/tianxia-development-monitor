@@ -886,9 +886,11 @@ def build() -> dict:
                 raise ValueError("Officer-duel video changed")
         roster = read_json("docs/DUEL_ROSTER_STAGE1.json")
         known = [row for row in roster["officers"] if row["status"] == "verified_in_duel"]
-        if len({row["reference_id"] for row in known}) != roster["verified_in_duel"]:
+        if len(known) != roster["verified_in_duel"] or len({row["reference_id"] for row in known}) != len(known):
             raise ValueError("Stage-one roster count disagrees with verified officer identities")
-        duel_card["next"] = "일기토 장수 확대는 장수 50명 카드에서 추적합니다."
+        previous_duel_card = next((c for c in cards if c["id"] == "qinglong_duel"), None)
+        if previous_duel_card:
+            previous_duel_card["next"] = "일기토 장수 확대는 장수 50명 카드에서 추적합니다."
         cards.append(card("duel_roster_stage1", "고유 모델 일기토 장수 50명", "graphics", "in_progress", "일기토 1단계",
                           f"목표 {roster['target']}명 중 {len(known)}명의 실제 일기토 참여를 검증했습니다. 장수 대전에 조운·전위가 합류했습니다.",
                           "조운과 전위의 보전·기마전 네 경기가 체력 소진으로 끝났습니다. 조운의 창 회수와 후속 찌르기, 전위의 좌우 철극별 접촉과 선공 입력을 검사했습니다.",
