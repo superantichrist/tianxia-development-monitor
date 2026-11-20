@@ -1000,6 +1000,21 @@ def build(current_gallery=None) -> dict:
         group_card["summary"] = "장비의 난입 함성, 창을 받아낸 숨소리, 여포에게 맞는 표정이 경기 사건에 연결됩니다. C로 장비를 따라가며 볼 수 있습니다."
         group_card["evidence"] = f"보전 {verified['compared_frames']}프레임의 접촉·체력이 이전과 일치했습니다. 장비의 자유 대전 {verified['bouts']}경기를 끝까지 확인했고, 함성 때 가운데 치열 간격은 최대 {verified['controls']['shout_gap_m']*1000:.1f}mm였습니다."
         group_card["next"] = "장수별 고유 동작과 얼굴 연기를 다음 출전 무장으로 확대합니다."
+    yide = milestones.get("M05.1", {}).get("yide_zhangfei")
+    if yide:
+        proof_path = duel_dir / "yide" / "verified.json"
+        if file_sha256(proof_path) != yide["proof_sha256"]:
+            raise ValueError("Zhang Fei model proof differs from the ledger")
+        report = json.loads(proof_path.read_text(encoding="utf-8"))
+        if report["stance"]["failures"] or report["equal_before_after_frames"] != 540:
+            raise ValueError("Zhang Fei gameplay or grip validation failed")
+        for key in ("field", "close", "mounted", "compare"):
+            if file_sha256(proof_path.parent / (key+".mp4")) != report["media"][key]["sha256"]:
+                raise ValueError("Zhang Fei gameplay footage changed")
+        group_card = next(c for c in cards if c["id"]=="qinglong_duel")
+        group_card["summary"] = "장비의 상투·곱슬 수염·갑주를 다시 조형하고 양손을 장팔사모 자루에 맞췄습니다. 관우와 여포의 공방에 장비, 유비 순으로 합류합니다."
+        foot = report["stance"]["foot"]
+        group_card["evidence"] = f"장비 출전 {report['bouts']}경기를 확인했습니다. 보전의 발 사이 최소 간격은 {100*foot['foot_gap']:.1f}cm, 손 중심과 창대의 최대 오차는 {1000*foot['grip_error_m']:.2f}mm였습니다. 같은 시점의 신구 모델 15초 플레이 영상도 검증했습니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
