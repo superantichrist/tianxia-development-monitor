@@ -1030,6 +1030,17 @@ def build(current_gallery=None) -> dict:
         combat = next(c for c in cards if c["id"]=="qinglong_duel")
         combat["summary"] = "도약 내려치기와 회피, 한 손 회수, 방어 후 밀림을 실제 접촉에 연결했습니다. 서황의 대부와 감녕의 환두도는 움직이는 날로 피해를 판정합니다."
         combat["evidence"] = "동일한 공격에서 장비의 피해가 회피 전 17, 회피 후 0이었습니다. 서황은 양손을 따로 맞춘 자세로 대부를 휘두릅니다."
+    peicheng = milestones.get("M05.1", {}).get("peicheng_xiahoudun")
+    if peicheng:
+        path = duel_dir / "peicheng" / "verified.json"
+        if file_sha256(path) != peicheng["proof_sha256"]:
+            raise ValueError("Peicheng proof differs from its release ledger")
+        proof = json.loads(path.read_text(encoding="utf-8"))
+        if proof["controls"]["failures"] or file_sha256(path.parent / "play.mp4") != proof["movie"]["sha256"]:
+            raise ValueError("Peicheng playback or controls changed")
+        roster_card = next(c for c in cards if c["id"]=="duel_roster_stage1")
+        roster_card["summary"] = "16명의 장수를 자유 대전에서 선택할 수 있습니다. 하후돈은 첫 피격을 버틴 뒤 장창을 낮게 모으며 한 번 더 추격합니다."
+        roster_card["evidence"] = f"보전·기마전 {proof['matrix']['bouts']}경기. 황충의 선제 사격과 서황의 보전 공격을 받은 뒤 하후돈이 대응한 실제 접촉과 재시작을 검사했습니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
@@ -1142,7 +1153,7 @@ def validate(data: dict) -> None:
         catalog = data.get("officerCatalog")
         if catalog is not None:
             counts = tuple(catalog.get(k) for k in ("illustrations","models","duelPlayable","referenceEntries"))
-            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000),"fancheng":(21,14,14,1000),"hefei":(21,15,15,1000)}
+            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000),"fancheng":(21,14,14,1000),"hefei":(21,15,15,1000),"peicheng":(22,16,16,1000)}
             if counts != revisions.get(catalog.get("revision")):
                 raise ValueError("Public catalog must distinguish portraits, models, playable officers and reference IDs in the reviewed release")
     for milestone_id in ("M05", "M05.1"):

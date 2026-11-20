@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-20T03:28:29+00:00",
+  "generated_utc": "2026-11-20T06:37:27+00:00",
   "count": 1000,
-  "illustrated": 21,
-  "duel_playable": 15,
+  "illustrated": 22,
+  "duel_playable": 16,
   "name_ko_count": 81,
   "scope": "Official RTK14 name-list baseline. No fixed upper cap; additional verified series entries may be appended. This is a production roster, not 1000 playable characters.",
   "references": [
@@ -2366,19 +2366,26 @@
       "reference_index": 124,
       "name_han": "夏侯惇",
       "name_ko": "하후돈",
-      "alias": null,
+      "alias": "xiahoudun",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
-      "literature_classification": "pending_source_review",
+      "literature_classification": "romance_text_attested",
       "era_scope": "three_kingdoms_reference_roster",
-      "roster_status": "planned",
+      "roster_status": "duel_verified",
       "campaign_playable": false,
-      "duel_playable": false,
-      "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "duel_playable": true,
+      "model_status": "verified_free_duel",
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/duel/xiahoudun.png",
+        "public_path": "portraits/xiahoudun.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "c50629f3d5cd1f596527b422d9e55eaec5ee5890bfc9a8748157bd3885f010c9"
+      },
+      "art_direction": "왼눈 가죽 안대 · 먹빛 털 망토 · 피격을 버틴 뒤 한 차례 패성 장창 추격",
+      "production_priority": 31,
+      "romance_chapter": 18
     },
     {
       "id": "rtk14-ref-0125",
@@ -19155,5 +19162,5 @@
       "production_priority": 1000
     }
   ],
-  "gallery_revision": "hefei"
+  "gallery_revision": "peicheng"
 }
