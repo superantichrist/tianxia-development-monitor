@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-19T23:22:32+00:00",
+  "generated_utc": "2026-11-19T23:57:00+00:00",
   "count": 1000,
   "illustrated": 20,
   "duel_playable": 13,
@@ -12556,7 +12556,7 @@
       "alias": "zhangfei",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
-      "literature_classification": "pending_source_review",
+      "literature_classification": "romance_text_attested",
       "era_scope": "three_kingdoms_reference_roster",
       "roster_status": "duel_verified",
       "campaign_playable": false,
@@ -12571,7 +12571,8 @@
         "sha256": "64976ef94a046d4820d53cabe8470329c0a7929fa0317dc60f9a628a77e1c94b"
       },
       "art_direction": "장팔사모 · 검은 수염 · 강한 체구",
-      "production_priority": 3
+      "production_priority": 3,
+      "romance_chapter": 42
     },
     {
       "id": "rtk14-ref-0657",

@@ -67,7 +67,8 @@ def prepare(root, base=None):
     catalog['illustrated']=sum(bool(r['portrait']) for r in rows.values())
     catalog['duel_playable']=sum(r['duel_playable'] for r in rows.values())
     catalog['gallery_revision']='jinfan'
-    catalog['generated_utc']=release['verified_utc']
+    update=parent.get('zhangfei_performance',{})
+    catalog['generated_utc']=max(release['verified_utc'],update.get('verified_utc',''))
     return catalog,art
 
 
