@@ -30,7 +30,8 @@ def sha(path):
 
 def reviewed_source(root,name):
  name=name.removeprefix('res://')
- if name in {'src/data.gd','src/duel_director.gd','src/duel_roster.gd'}:
+ if name in {'src/data.gd','src/duel_director.gd','src/duel_roster.gd','src/art_library.gd','src/battle_sim.gd',
+             'src/campaign_terrain.gd','src/world.gd','src/world_forge.gd','assets/shaders/soldier.gdshader','assets/shaders/terrain.gdshader'}:
   return root/'artifacts/field-v4-source'/(Path(name).name+'.txt')
  return root/name
 

@@ -19,7 +19,7 @@ def prepare(root, base=None):
     catalog=base if base is not None else read(root/'assets/data/officers.json')
     ledger=read(root/'docs/milestones.json')
     parent=next((v for v in ledger['milestones'] if v['id']=='M05.1'),{})
-    editions=[('fancheng_pangde','fancheng'),('jinfan_ganning','jinfan')]
+    editions=[('hefei_zhangliao','hefei'),('fancheng_pangde','fancheng'),('jinfan_ganning','jinfan')]
     latest=next(((parent[k],folder) for k,folder in editions if k in parent),None)
     if latest is None:return catalog,{}
     release,revision=latest

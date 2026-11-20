@@ -1015,6 +1015,21 @@ def build(current_gallery=None) -> dict:
         group_card["summary"] = "장비의 상투·곱슬 수염·갑주를 다시 조형하고 양손을 장팔사모 자루에 맞췄습니다. 관우와 여포의 공방에 장비, 유비 순으로 합류합니다."
         foot = report["stance"]["foot"]
         group_card["evidence"] = f"장비 출전 {report['bouts']}경기를 확인했습니다. 보전의 발 사이 최소 간격은 {100*foot['foot_gap']:.1f}cm, 손 중심과 창대의 최대 오차는 {1000*foot['grip_error_m']:.2f}mm였습니다. 같은 시점의 신구 모델 15초 플레이 영상도 검증했습니다."
+    hefei = milestones.get("M05.1", {}).get("hefei_zhangliao")
+    if hefei:
+        proof_path = duel_dir / "hefei" / "verified.json"
+        if file_sha256(proof_path) != hefei["proof_sha256"]:
+            raise ValueError("Hefei proof differs from the milestone ledger")
+        p = json.loads(proof_path.read_text(encoding="utf-8"))
+        for key in ("world", "duels"):
+            if file_sha256(proof_path.parent / (key+".mp4")) != p["films"][key]["sha256"]:
+                raise ValueError("Current demo differs from its verified film")
+        roster_card = next(c for c in cards if c["id"]=="duel_roster_stage1")
+        roster_card["summary"] = "15명의 고유 장수로 자유 대전을 진행할 수 있습니다. 장료는 대도와 남색 망토를 갖추고 첫 교전 뒤 안쪽에서 재진입합니다."
+        roster_card["evidence"] = "좌우 순서를 구분한 대진 210개를 보전과 기마전 420경기로 검사했습니다. 장료의 안쪽·바깥쪽 선회는 같은 감녕을 상대로 대조했습니다."
+        combat = next(c for c in cards if c["id"]=="qinglong_duel")
+        combat["summary"] = "도약 내려치기와 회피, 한 손 회수, 방어 후 밀림을 실제 접촉에 연결했습니다. 서황의 대부와 감녕의 환두도는 움직이는 날로 피해를 판정합니다."
+        combat["evidence"] = "동일한 공격에서 장비의 피해가 회피 전 17, 회피 후 0이었습니다. 서황은 양손을 따로 맞춘 자세로 대부를 휘두릅니다."
     parity = [
         {"area":"캠페인·경제", "domain":"campaign", "current":"8세력·30도시, 세금·식량·민심·건설·계절, 연속 3D 지형", "gap":"전체 지도·시작 연도·세력 콘텐츠, 복잡한 자원·인구 계층", "next":"3D 지형·도시 표현과 전략 콘텐츠 확장", "level":"기반 구현"},
         {"area":"군대·장수", "domain":"campaign", "current":"복수 군대, 모병·보충·행군, 캠페인 장수 26명 데이터, 지도 위 3D 군대·장수·깃발", "gap":"수행 부대, 관계·가족·장비·직위·세밀한 보급", "next":"군대 행군 동작과 지도 상호작용 확장", "level":"기반 구현"},
@@ -1060,6 +1075,9 @@ def build(current_gallery=None) -> dict:
         if fancheng:
             duel_area["current"] += ", 백마 방덕의 회마사와 추격 이탈"
             next(r for r in parity if r["area"]=="모델·재질·표현")["current"] += ", 방덕 전용 백마의 네 다리 접지와 기마 동작"
+    if hefei:
+        next(r for r in parity if r["area"]=="모델·재질·표현")["current"] += ", 성읍·농경지·산등성이·성벽 석재·병사 찰갑"
+        next(r for r in parity if r["area"]=="공성·물리")["current"] += ", 기존 수비 궁병의 성벽 배치와 사격"
     return {
         "schemaVersion":1,
         "updatedAt":now,
@@ -1124,7 +1142,7 @@ def validate(data: dict) -> None:
         catalog = data.get("officerCatalog")
         if catalog is not None:
             counts = tuple(catalog.get(k) for k in ("illustrations","models","duelPlayable","referenceEntries"))
-            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000),"fancheng":(21,14,14,1000)}
+            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000),"fancheng":(21,14,14,1000),"hefei":(21,15,15,1000)}
             if counts != revisions.get(catalog.get("revision")):
                 raise ValueError("Public catalog must distinguish portraits, models, playable officers and reference IDs in the reviewed release")
     for milestone_id in ("M05", "M05.1"):

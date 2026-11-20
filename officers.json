@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-20T01:02:33+00:00",
+  "generated_utc": "2026-11-20T03:28:29+00:00",
   "count": 1000,
   "illustrated": 21,
-  "duel_playable": 14,
+  "duel_playable": 15,
   "name_ko_count": 81,
   "scope": "Official RTK14 name-list baseline. No fixed upper cap; additional verified series entries may be appended. This is a production roster, not 1000 playable characters.",
   "references": [
@@ -8463,7 +8463,7 @@
         "sha256": "fcf30d08ed591dda95085948913bac6a2ff215686d25f7f5af7a77eec296716b"
       },
       "art_direction": "하동 대부 · 막힌 도끼의 되베기",
-      "production_priority": 29
+      "production_priority": 30
     },
     {
       "id": "rtk14-ref-0443",
@@ -12696,12 +12696,12 @@
       "alias": "zhangliao",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
-      "literature_classification": "pending_source_review",
+      "literature_classification": "romance_text_attested",
       "era_scope": "three_kingdoms_reference_roster",
-      "roster_status": "planned",
+      "roster_status": "duel_verified",
       "campaign_playable": false,
-      "duel_playable": false,
-      "model_status": "not_created",
+      "duel_playable": true,
+      "model_status": "verified_free_duel",
       "illustration_status": "original_generated",
       "portrait": {
         "runtime_path": "assets/portraits/romance_v2/zhangliao.png",
@@ -12711,7 +12711,8 @@
         "sha256": "f36857eb21f064ec5a65e24bccd2f4c19d7b9201a3e5ddf52f6aed9e45358d4a"
       },
       "art_direction": "소요진의 노련한 지휘관 · 짧은 수염 · 남색 갑주 · 대도",
-      "production_priority": 14
+      "production_priority": 14,
+      "romance_chapter": 67
     },
     {
       "id": "rtk14-ref-0664",
@@ -19154,5 +19155,5 @@
       "production_priority": 1000
     }
   ],
-  "gallery_revision": "fancheng"
+  "gallery_revision": "hefei"
 }
