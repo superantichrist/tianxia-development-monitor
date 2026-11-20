@@ -969,6 +969,22 @@ def build(current_gallery=None) -> dict:
         art_card["summary"] = f"공개 갤러리에 장수 원화 {portrait_count}장을 등록했습니다. 감녕·태사자·허저·서황의 그림도 이름 또는 참고 ID로 열 수 있습니다."
         art_card["evidence"] = f"실제 장수 대전 선택 화면을 참고 ID와 대조했습니다. 공개 명부는 원화 {portrait_count}명, 모델과 일기토 {duel_count}명입니다."
         art_card["next"] = "검증한 무장과 원화를 명부의 해당 참고 ID에 이어 등록합니다."
+    fancheng = milestones.get("M05.1", {}).get("fancheng_pangde")
+    if fancheng:
+        proof_dir = duel_dir / "fancheng"
+        report = json.loads((proof_dir / "verified.json").read_text(encoding="utf-8"))
+        for key in ("mounted","foot","compare"):
+            if file_sha256(proof_dir / (key+".mp4")) != report["media"][key]["sha256"]:
+                raise ValueError("Pang De gameplay footage changed")
+        if report["horse_motion"]["failures"] or report["cases"]["failures"]:
+            raise ValueError("White horse and bow validation failed")
+        matrix = report["matrix"]
+        progress = next(c for c in cards if c["id"]=="duel_roster_stage1")
+        progress["summary"] = f"목표 50명 중 {matrix['officers']}명 출전. 방덕은 백마 위에서 강도로 먼저 맞붙고, 관우가 추격하면 말의 진행 방향을 유지하며 뒤로 활을 쏩니다."
+        progress["evidence"] = f"보전·기마전 {matrix['bouts']}경기, 좌우 교대 {matrix['matched_swaps']}쌍을 확인했습니다. 같은 화살을 추격 중에는 맞고 발사 뒤 이탈하면 피했습니다. 말·기수 44관절의 실제 경기 동작을 재생할 수 있습니다."
+        art_card = next(c for c in cards if c["id"]=="officer_portraits")
+        art_card["summary"] = f"공개 장수 갤러리에는 방덕의 청포와 은갑, 백마를 담은 그림을 포함해 {portrait_count}장의 독자 원화가 있습니다."
+        art_card["evidence"] = f"참고 명부 1,000개 ID에 대해 원화 {portrait_count}명과 자유 대전 {duel_count}명의 실제 선택 화면을 대조했습니다."
     performance = milestones.get("M05.1", {}).get("zhangfei_performance")
     if performance:
         path = duel_dir / "changban" / "verified.json"
@@ -1023,9 +1039,12 @@ def build(current_gallery=None) -> dict:
     if jinfan:
         gallery_area = next(r for r in parity if r["area"]=="유니크 장수·원화")
         gallery_area.update(gap="50명 목표까지 장수별 모델·공방·출전 확대 및 명부의 미검토 인물",
-                            next="연의에 근거한 장수별 외형과 무기 제작, 보전·기마전 검증",level="원화 20명 · 자유 대전 13명")
+                            next="연의에 근거한 장수별 외형과 무기 제작, 보전·기마전 검증",level=f"원화 {portrait_count}명 · 자유 대전 {duel_count}명")
         duel_area = next(r for r in parity if r["area"]=="장군 일기토")
-        duel_area.update(current="장수 13명의 보전·기마 자유 대전, 호뢰관 난입전, 활·근접 무기 교대와 접촉 판정")
+        duel_area.update(current=f"장수 {duel_count}명의 보전·기마 자유 대전, 호뢰관 난입전, 활·근접 무기 교대와 접촉 판정")
+        if fancheng:
+            duel_area["current"] += ", 백마 방덕의 회마사와 추격 이탈"
+            next(r for r in parity if r["area"]=="모델·재질·표현")["current"] += ", 방덕 전용 백마의 네 다리 접지와 기마 동작"
     return {
         "schemaVersion":1,
         "updatedAt":now,
@@ -1090,7 +1109,7 @@ def validate(data: dict) -> None:
         catalog = data.get("officerCatalog")
         if catalog is not None:
             counts = tuple(catalog.get(k) for k in ("illustrations","models","duelPlayable","referenceEntries"))
-            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000)}
+            revisions = {None:(16,4,4,1000),"jinfan":(20,13,13,1000),"fancheng":(21,14,14,1000)}
             if counts != revisions.get(catalog.get("revision")):
                 raise ValueError("Public catalog must distinguish portraits, models, playable officers and reference IDs in the reviewed release")
     for milestone_id in ("M05", "M05.1"):

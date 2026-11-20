@@ -19,10 +19,11 @@ def prepare(root, base=None):
     catalog=base if base is not None else read(root/'assets/data/officers.json')
     ledger=read(root/'docs/milestones.json')
     parent=next((v for v in ledger['milestones'] if v['id']=='M05.1'),{})
-    release=parent.get('jinfan_ganning')
-    if not release:
-        return catalog,{}
-    proof_path=root/'artifacts/qinglong/review/jinfan/verified.json'
+    editions=[('fancheng_pangde','fancheng'),('jinfan_ganning','jinfan')]
+    latest=next(((parent[k],folder) for k,folder in editions if k in parent),None)
+    if latest is None:return catalog,{}
+    release,revision=latest
+    proof_path=root/'artifacts/qinglong/review'/revision/'verified.json'
     if digest(proof_path)!=release['proof_sha256']:
         raise ValueError('The playable officer index requires the verified release proof')
     proof=read(proof_path)
@@ -66,7 +67,7 @@ def prepare(root, base=None):
         raise ValueError('Verified reference names differ from the playable menu')
     catalog['illustrated']=sum(bool(r['portrait']) for r in rows.values())
     catalog['duel_playable']=sum(r['duel_playable'] for r in rows.values())
-    catalog['gallery_revision']='jinfan'
+    catalog['gallery_revision']=revision
     update=parent.get('zhangfei_performance',{})
     catalog['generated_utc']=max(release['verified_utc'],update.get('verified_utc',''))
     return catalog,art

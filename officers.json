@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-11-19T23:57:00+00:00",
+  "generated_utc": "2026-11-20T01:02:33+00:00",
   "count": 1000,
-  "illustrated": 20,
-  "duel_playable": 13,
+  "illustrated": 21,
+  "duel_playable": 14,
   "name_ko_count": 81,
   "scope": "Official RTK14 name-list baseline. No fixed upper cap; additional verified series entries may be appended. This is a production roster, not 1000 playable characters.",
   "references": [
@@ -8463,7 +8463,7 @@
         "sha256": "fcf30d08ed591dda95085948913bac6a2ff215686d25f7f5af7a77eec296716b"
       },
       "art_direction": "하동 대부 · 막힌 도끼의 되베기",
-      "production_priority": 28
+      "production_priority": 29
     },
     {
       "id": "rtk14-ref-0443",
@@ -15884,19 +15884,26 @@
       "reference_index": 830,
       "name_han": "龐德",
       "name_ko": "방덕",
-      "alias": null,
+      "alias": "pangde",
       "homonym_group_size": 1,
       "identity_review": "reference_name_registered",
-      "literature_classification": "pending_source_review",
+      "literature_classification": "romance_text_attested",
       "era_scope": "three_kingdoms_reference_roster",
-      "roster_status": "planned",
+      "roster_status": "duel_verified",
       "campaign_playable": false,
-      "duel_playable": false,
-      "model_status": "not_created",
-      "illustration_status": "queued",
-      "portrait": null,
-      "art_direction": null,
-      "production_priority": 100
+      "duel_playable": true,
+      "model_status": "verified_free_duel",
+      "illustration_status": "original_generated",
+      "portrait": {
+        "runtime_path": "assets/portraits/duel/pangde.png",
+        "public_path": "portraits/pangde.png",
+        "width": 1024,
+        "height": 1536,
+        "sha256": "c0bf7c3370b5f4f0e95c0259b649c477653c2bb6bad118763a9fd1f8b42ff548"
+      },
+      "art_direction": "백마·청포 은갑 · 양손 강도와 추격 중 뒤돌아 쏘는 조궁",
+      "production_priority": 28,
+      "romance_chapter": 74
     },
     {
       "id": "rtk14-ref-0831",
@@ -19147,5 +19154,5 @@
       "production_priority": 1000
     }
   ],
-  "gallery_revision": "jinfan"
+  "gallery_revision": "fancheng"
 }

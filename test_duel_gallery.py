@@ -42,6 +42,16 @@ class PlayableGalleryTests(unittest.TestCase):
         (self.public/'portraits/ganning.png').write_bytes(b'changed')
         with self.assertRaises(ValueError):duel_gallery.sync(self.public,catalog,images,check=True)
 
+    def test_latest_verified_menu_is_used_for_the_gallery(self):
+        old=duel_gallery.read(self.proof)
+        proof=self.write('artifacts/qinglong/review/fancheng/verified.json',old)
+        ledger=duel_gallery.read(self.root/'docs/milestones.json')
+        ledger['milestones'][0]['fancheng_pangde']={'proof_sha256':duel_gallery.digest(proof),'verified_utc':'2026-11-20T00:55:00+00:00'}
+        self.write('docs/milestones.json',ledger)
+        catalog,_=duel_gallery.prepare(self.root)
+        self.assertEqual(catalog['gallery_revision'],'fancheng')
+        self.assertEqual(catalog['generated_utc'],'2026-11-20T00:55:00+00:00')
+
     def test_changed_game_evidence_is_rejected(self):
         self.proof.write_text('{}',encoding='utf-8')
         with self.assertRaisesRegex(ValueError,'release proof'):duel_gallery.prepare(self.root)
